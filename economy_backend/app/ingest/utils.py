@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, List, Sequence, Type
 from sqlalchemy import and_, insert
 from sqlalchemy.orm import Session
 
-from app.db.models import Indicator, RawBase, TimeSeriesValue
+from app.db.models import Indicator, RawBase, TimeSeriesValue, TradeFlow
 
 logger = logging.getLogger(__name__)
 
@@ -72,10 +72,108 @@ def bulk_upsert_timeseries(session: Session, rows: Sequence[Dict[str, Any]]) -> 
             session.add(TimeSeriesValue(**row))
 
 
+def bulk_upsert_tradeflows(session: Session, rows: Sequence[Dict[str, Any]]) -> None:
+    """Upsert trade flow rows keyed by reporter, partner, year, section, flow type."""
+
+    if not rows:
+        return
+
+    table = TradeFlow.__table__
+    dialect_name = session.bind.dialect.name if session.bind else ""
+    if dialect_name == "postgresql":  # pragma: no cover - environment specific
+        stmt = insert(table).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[
+                table.c.reporter_country_id,
+                table.c.partner_country_id,
+                table.c.year,
+                table.c.hs_section,
+                table.c.flow_type,
+            ],
+            set_={
+                "value_usd": stmt.excluded.value_usd,
+            },
+        )
+        session.execute(stmt)
+        return
+
+    for row in rows:
+        existing = (
+            session.query(TradeFlow)
+            .filter(
+                and_(
+                    TradeFlow.reporter_country_id == row["reporter_country_id"],
+                    TradeFlow.partner_country_id == row["partner_country_id"],
+                    TradeFlow.year == row["year"],
+                    TradeFlow.hs_section == row.get("hs_section"),
+                    TradeFlow.flow_type == row.get("flow_type"),
+                )
+            )
+            .one_or_none()
+        )
+        if existing:
+            existing.value_usd = row.get("value_usd", existing.value_usd)
+        else:
+            session.add(TradeFlow(**row))
+
+
+def parse_timeseries_rows(
+    df: Any,
+    *,
+    indicator_id: int,
+    country_id: str,
+    source: str,
+    time_column: str = "time",
+    value_column: str = "value",
+    location_fields: Iterable[str] = ("LOCATION", "REF_AREA", "REF_AREA_ID", "geo"),
+) -> List[Dict[str, Any]]:
+    """Parse a dataframe-like object into TimeSeriesValue rows."""
+
+    rows: List[Dict[str, Any]] = []
+    if df is None:
+        return rows
+
+    location_fields = list(location_fields)
+
+    for _, row in df.iterrows():  # type: ignore[call-arg]
+        location = None
+        for field in location_fields:
+            if field in row and row[field]:
+                location = row[field]
+                break
+        if location and str(location).upper() != country_id.upper():
+            continue
+
+        time_value = row.get(time_column) if isinstance(row, dict) else getattr(row, time_column, None)
+        value = row.get(value_column) if isinstance(row, dict) else getattr(row, value_column, None)
+        if time_value is None or value is None:
+            continue
+        try:
+            date = ensure_date(time_value)
+            numeric_value = float(value)
+        except Exception as exc:  # pragma: no cover - data dependent
+            logger.warning("Skipping row %s: %s", row, exc)
+            continue
+        rows.append(
+            {
+                "indicator_id": indicator_id,
+                "country_id": country_id,
+                "date": date,
+                "value": numeric_value,
+                "source": source,
+                "ingested_at": dt.datetime.utcnow(),
+            }
+        )
+    return rows
+
+
 def ensure_date(value: Any) -> dt.date:
     if isinstance(value, dt.date):
         return value
     if isinstance(value, dt.datetime):
         return value.date()
-    return dt.date.fromisoformat(str(value))
+    text = str(value)
+    if text.isdigit() and len(text) == 4:
+        return dt.date(int(text), 12, 31)
+    return dt.date.fromisoformat(text)
 
