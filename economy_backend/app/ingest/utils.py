@@ -4,7 +4,7 @@ import datetime as dt
 import logging
 from typing import Any, Dict, Iterable, List, Sequence, Type
 
-from sqlalchemy import and_, insert
+from sqlalchemy import and_, func, insert
 from sqlalchemy.orm import Session
 
 from app.db.models import Indicator, RawBase, TimeSeriesValue, TradeFlow
@@ -70,6 +70,39 @@ def bulk_upsert_timeseries(session: Session, rows: Sequence[Dict[str, Any]]) -> 
             existing.ingested_at = row.get("ingested_at", existing.ingested_at)
         else:
             session.add(TimeSeriesValue(**row))
+
+
+def upsert_shipping_country_month(
+    session: Session, country_id: str, year: int, month: int, *, activity: Any, transits: Any
+) -> None:
+    from app.db.models import ShippingCountryMonth
+
+    existing = (
+        session.query(ShippingCountryMonth)
+        .filter(
+            ShippingCountryMonth.country_id == country_id,
+            ShippingCountryMonth.year == year,
+            ShippingCountryMonth.month == month,
+        )
+        .one_or_none()
+    )
+    if existing:
+        existing.activity_level = activity
+        existing.transits = transits
+    else:
+        next_id = (
+            session.query(func.coalesce(func.max(ShippingCountryMonth.id), 0)).scalar() or 0
+        )
+        session.add(
+            ShippingCountryMonth(
+                id=int(next_id) + 1,
+                country_id=country_id,
+                year=year,
+                month=month,
+                activity_level=activity,
+                transits=transits,
+            )
+        )
 
 
 def bulk_upsert_tradeflows(session: Session, rows: Sequence[Dict[str, Any]]) -> None:

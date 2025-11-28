@@ -184,7 +184,7 @@ class AssetPrice(Base):
         {"schema": "warehouse"},
     )
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     asset_id = Column(Integer, ForeignKey("warehouse.asset.id"), nullable=False)
     date = Column(Date, nullable=False)
     open = Column(Numeric, nullable=True)
@@ -202,7 +202,7 @@ class ShippingCountryMonth(Base):
         {"schema": "warehouse"},
     )
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     country_id = Column(String(3), ForeignKey("warehouse.country.id"), nullable=False)
     year = Column(Integer, nullable=False)
     month = Column(Integer, nullable=False)
