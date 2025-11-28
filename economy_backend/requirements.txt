@@ -5,3 +5,5 @@ psycopg2-binary
 alembic
 pydantic>=1.10,<2.0
 httpx
+pyyaml
+pytest

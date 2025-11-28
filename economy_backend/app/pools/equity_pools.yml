@@ -1,0 +1,162 @@
+global_benchmarks:
+  name: Global Benchmarks
+  description: Broad global and US equity benchmarks.
+  tickers:
+    - SPY
+    - ACWI
+    - VT
+
+us_equity_region:
+  name: US Equity Region
+  description: United States focused equity exposures across market caps.
+  tickers:
+    - SPY
+    - VTI
+    - QQQ
+    - IWM
+
+europe_equity_region:
+  name: Europe Equity Region
+  description: Developed Europe large and mid-cap equities.
+  tickers:
+    - EZU
+    - VGK
+    - IEUR
+
+asia_pacific_equity_region:
+  name: Asia Pacific Equity Region
+  description: Developed Asia Pacific equity markets.
+  tickers:
+    - AAXJ
+    - VPL
+    - EWJ
+    - EPP
+
+emerging_markets_focus:
+  name: Emerging Markets Focus
+  description: Broad and diversified emerging market equities.
+  tickers:
+    - EEM
+    - VWO
+    - IEMG
+
+us_sector_etfs:
+  name: US Sector ETFs
+  description: SPDR sector ETFs covering the US market.
+  tickers:
+    - XLK
+    - XLY
+    - XLF
+    - XLV
+    - XLI
+    - XLE
+    - XLP
+    - XLU
+    - XLRE
+    - XLB
+
+us_tech_megacap:
+  name: US Tech Megacap
+  description: Mega-cap US technology and internet leaders.
+  tickers:
+    - AAPL
+    - MSFT
+    - GOOG
+    - AMZN
+    - NVDA
+    - META
+
+us_financials_core:
+  name: US Financials Core
+  description: Core US diversified financial institutions.
+  tickers:
+    - JPM
+    - BAC
+    - WFC
+    - C
+    - GS
+    - MS
+
+us_energy_materials:
+  name: US Energy and Materials
+  description: Integrated oil, gas, and diversified materials majors.
+  tickers:
+    - XOM
+    - CVX
+    - COP
+    - SLB
+    - BHP
+    - RIO
+    - FCX
+
+us_industrials_infra:
+  name: US Industrials and Infrastructure
+  description: US industrials, transportation, and infrastructure bellwethers.
+  tickers:
+    - CAT
+    - DE
+    - UNP
+    - UPS
+    - BA
+    - GE
+    - HON
+    - ETN
+
+us_consumer_retail:
+  name: US Consumer and Retail
+  description: US consumer staples, discretionary, and retail leaders.
+  tickers:
+    - WMT
+    - COST
+    - TGT
+    - HD
+    - AMZN
+    - MCD
+    - NKE
+    - SBUX
+
+us_healthcare_pharma:
+  name: US Healthcare and Pharma
+  description: US diversified healthcare providers and pharmaceutical majors.
+  tickers:
+    - UNH
+    - JNJ
+    - PFE
+    - MRK
+    - ABBV
+    - LLY
+    - BMY
+
+europe_large_caps_us_listed:
+  name: Europe Large Caps (US Listed)
+  description: European large caps trading on US exchanges.
+  tickers:
+    - SAP
+    - ASML
+    - NVO
+    - RYAAY
+    - AZN
+    - SHEL
+
+asia_large_caps_us_listed:
+  name: Asia Large Caps (US Listed)
+  description: Asia and Pacific large caps with US listings.
+  tickers:
+    - TSM
+    - BABA
+    - JD
+    - PDD
+    - NIO
+    - INFY
+
+clean_energy_transition:
+  name: Clean Energy Transition
+  description: Companies and ETFs focused on renewable and clean energy.
+  tickers:
+    - ICLN
+    - TAN
+    - ENPH
+    - FSLR
+    - PLUG
+    - RUN
+    - NEE
