@@ -7,6 +7,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
+from app.db.models import Base  # noqa: F401
 
 
 def _build_engine() -> Engine:
@@ -24,6 +25,7 @@ def _build_engine() -> Engine:
 
 engine = _build_engine()
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True, class_=Session)
+metadata = Base.metadata
 
 
 def get_db() -> Generator[Session, None, None]:
