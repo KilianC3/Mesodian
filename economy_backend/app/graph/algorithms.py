@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from app.db.models import Edge, Node, NodeMetric
+
+
+def compute_trade_centrality(session: Session, year: int) -> None:
+    country_nodes = (
+        session.query(Node)
+        .filter(Node.node_type == "Country", Node.ref_type == "Country")
+        .all()
+    )
+    if not country_nodes:
+        return
+
+    edges = session.query(Edge).filter(Edge.edge_type == "trade_exposure").all()
+
+    partners = {node.id: set() for node in country_nodes}
+    weighted_degree = {node.id: 0.0 for node in country_nodes}
+
+    for edge in edges:
+        attrs = edge.attrs or {}
+        if attrs.get("year") != year:
+            continue
+
+        weight = float(edge.weight) if edge.weight is not None else 0.0
+
+        if edge.source_node_id in weighted_degree:
+            weighted_degree[edge.source_node_id] += weight
+            if edge.target_node_id in partners:
+                partners[edge.source_node_id].add(edge.target_node_id)
+        if edge.target_node_id in weighted_degree:
+            weighted_degree[edge.target_node_id] += weight
+            if edge.source_node_id in partners:
+                partners[edge.target_node_id].add(edge.source_node_id)
+
+    weights = list(weighted_degree.values())
+    min_weight = min(weights) if weights else 0.0
+    max_weight = max(weights) if weights else 0.0
+    span = max_weight - min_weight
+
+    def _normalize(value: float) -> float:
+        if span == 0:
+            return 0.0
+        return ((value - min_weight) / span) * 100
+
+    next_metric_id = session.query(func.coalesce(func.max(NodeMetric.id), 0)).scalar() or 0
+
+    for node in country_nodes:
+        metric = (
+            session.query(NodeMetric)
+            .filter(
+                NodeMetric.node_id == node.id,
+                NodeMetric.metric_code == "NET_SYS_IMPORTANCE",
+                NodeMetric.as_of_year == year,
+            )
+            .one_or_none()
+        )
+
+        value = _normalize(weighted_degree.get(node.id, 0.0))
+        if metric:
+            metric.value = value
+        else:
+            next_metric_id += 1
+            metric = NodeMetric(
+                id=next_metric_id,
+                node_id=node.id,
+                metric_code="NET_SYS_IMPORTANCE",
+                as_of_year=year,
+                value=value,
+            )
+            session.add(metric)
+
+    session.commit()
