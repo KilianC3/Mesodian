@@ -214,7 +214,7 @@ class TradeFlow(Base):
     __tablename__ = "trade_flow"
     __table_args__ = {"schema": "warehouse"}
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     reporter_country_id = Column(String(3), ForeignKey("warehouse.country.id"), nullable=False)
     partner_country_id = Column(String(3), ForeignKey("warehouse.country.id"), nullable=False)
     year = Column(Integer, nullable=False)
