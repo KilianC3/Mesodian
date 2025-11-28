@@ -10,9 +10,12 @@ from sqlalchemy import (
     Numeric,
     String,
     UniqueConstraint,
+    JSON,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base
+
+JSONType = JSONB().with_variant(JSON, "sqlite")
 
 Base = declarative_base()
 
@@ -20,10 +23,10 @@ Base = declarative_base()
 class RawBase(Base):
     __abstract__ = True
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     fetched_at = Column(DateTime(timezone=True), index=True)
-    params = Column(JSONB)
-    payload = Column(JSONB)
+    params = Column(JSONType)
+    payload = Column(JSONType)
     __table_args__ = {"schema": "raw"}
 
 
@@ -115,6 +118,14 @@ class RawRss(RawBase):
     __tablename__ = "raw_rss"
 
 
+class RawEcb(RawBase):
+    __tablename__ = "raw_ecb"
+
+
+class RawOns(RawBase):
+    __tablename__ = "raw_ons"
+
+
 class Country(Base):
     __tablename__ = "country"
     __table_args__ = {"schema": "warehouse"}
@@ -157,7 +168,7 @@ class TimeSeriesValue(Base):
         {"schema": "warehouse"},
     )
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     indicator_id = Column(Integer, ForeignKey("warehouse.indicator.id"), nullable=False)
     country_id = Column(String(3), ForeignKey("warehouse.country.id"), nullable=False)
     date = Column(Date, nullable=False)
@@ -258,7 +269,7 @@ class Edge(Base):
     target_node_id = Column(BigInteger, ForeignKey("graph.node.id"), nullable=False)
     edge_type = Column(String, nullable=False)
     weight = Column(Numeric, nullable=True)
-    attrs = Column(JSONB, nullable=True)
+    attrs = Column(JSONType, nullable=True)
 
 
 class NodeMetric(Base):
