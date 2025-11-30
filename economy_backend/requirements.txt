@@ -9,3 +9,5 @@ pandas
 pandasdmx
 pyyaml
 pytest
+scikit-learn
+statsmodels
