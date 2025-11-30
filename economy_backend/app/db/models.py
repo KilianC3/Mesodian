@@ -11,11 +11,13 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     JSON,
+    func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base
 
 JSONType = JSONB().with_variant(JSON, "sqlite")
+BigIntPKType = BigInteger().with_variant(Integer, "sqlite")
 
 Base = declarative_base()
 
@@ -132,7 +134,7 @@ class Country(Base):
 
     id = Column(String(3), primary_key=True)
     name = Column(String, nullable=False)
-    region = Column(String, nullable=True)
+    region = Column(String, nullable=False)
     income_group = Column(String, nullable=True)
 
 
@@ -147,6 +149,7 @@ class Indicator(Base):
     frequency = Column(String, nullable=True)
     unit = Column(String, nullable=True)
     category = Column(String, nullable=True)
+    timing_class = Column(String, nullable=True)
 
 
 class Asset(Base):
@@ -175,6 +178,30 @@ class TimeSeriesValue(Base):
     value = Column(Numeric, nullable=False)
     source = Column(String, nullable=True)
     ingested_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class GlobalCycleIndex(Base):
+    __tablename__ = "global_cycle_index"
+    __table_args__ = (
+        UniqueConstraint(
+            "date", "frequency", "scope", "cycle_type", "method_version"
+        ),
+        {"schema": "warehouse", "sqlite_autoincrement": True},
+    )
+
+    id = Column(BigIntPKType, primary_key=True, autoincrement=True)
+    date = Column(Date, nullable=False)
+    frequency = Column(String, nullable=False)
+    scope = Column(String, nullable=False, default="global")
+    cycle_type = Column(String, nullable=False)
+    cycle_score = Column(Numeric, nullable=False)
+    cycle_regime = Column(String, nullable=False)
+    method_version = Column(String, nullable=False)
+    coverage_gdp_share = Column(Numeric, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 class AssetPrice(Base):
@@ -308,3 +335,29 @@ class WebMetric(Base):
     as_of_year = Column(Integer, nullable=False)
     metric_code = Column(String, nullable=False)
     value = Column(Numeric, nullable=True)
+
+
+class EdgeMetric(Base):
+    __tablename__ = "edge_metric"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_node_id",
+            "target_node_id",
+            "web_code",
+            "as_of_year",
+            "metric_code",
+        ),
+        {"schema": "graph"},
+    )
+
+    id = Column(BigInteger, primary_key=True)
+    source_node_id = Column(BigInteger, ForeignKey("graph.node.id"), nullable=False)
+    target_node_id = Column(BigInteger, ForeignKey("graph.node.id"), nullable=False)
+    web_code = Column(String, nullable=True)
+    as_of_year = Column(Integer, nullable=False)
+    metric_code = Column(String, nullable=False)
+    value = Column(Numeric, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
