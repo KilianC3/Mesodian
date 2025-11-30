@@ -141,24 +141,12 @@ def compute_country_resilience_for_year(session: Session, year: int) -> None:
             "inflation_cpi": -0.3,
             "gdp_growth": 0.3,
         },
-        "CR_SOCIO_ECON": {
-            "unemployment_rate": -0.7,
-            "gdp_growth": 0.3,
-            "event_stress_pulse": -0.3,
-        },
-        "CR_CLIMATE_ENV": {
-            "co2_per_capita": -0.6,
-            "energy_import_dep": -0.2,
-            "food_import_dep": -0.2,
-        },
     }
 
     pillar_weights: Dict[str, float] = {
-        "CR_MACRO_FISCAL": 0.25,
-        "CR_EXTERNAL_FX": 0.2,
-        "CR_FIN_SYSTEM": 0.2,
-        "CR_SOCIO_ECON": 0.2,
-        "CR_CLIMATE_ENV": 0.15,
+        "CR_MACRO_FISCAL": 0.4,
+        "CR_EXTERNAL_FX": 0.3,
+        "CR_FIN_SYSTEM": 0.3,
     }
 
     for row in rows:

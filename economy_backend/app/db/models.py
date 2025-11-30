@@ -149,6 +149,7 @@ class Indicator(Base):
     frequency = Column(String, nullable=True)
     unit = Column(String, nullable=True)
     category = Column(String, nullable=True)
+    timing_class = Column(String, nullable=True)
 
 
 class Asset(Base):
@@ -334,3 +335,29 @@ class WebMetric(Base):
     as_of_year = Column(Integer, nullable=False)
     metric_code = Column(String, nullable=False)
     value = Column(Numeric, nullable=True)
+
+
+class EdgeMetric(Base):
+    __tablename__ = "edge_metric"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_node_id",
+            "target_node_id",
+            "web_code",
+            "as_of_year",
+            "metric_code",
+        ),
+        {"schema": "graph"},
+    )
+
+    id = Column(BigInteger, primary_key=True)
+    source_node_id = Column(BigInteger, ForeignKey("graph.node.id"), nullable=False)
+    target_node_id = Column(BigInteger, ForeignKey("graph.node.id"), nullable=False)
+    web_code = Column(String, nullable=True)
+    as_of_year = Column(Integer, nullable=False)
+    metric_code = Column(String, nullable=False)
+    value = Column(Numeric, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
