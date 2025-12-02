@@ -22,6 +22,7 @@ from app.cycles.global_commodity_cycles import (
 from app.cycles.global_inflation_cycle import compute_gic_index, gic_regime_from_z, write_gic_to_db
 from app.cycles.global_financial_cycle import compute_gfc_index, gfc_regime_from_z, write_gfc_to_db
 from app.db.models import Base, Country, GlobalCycleIndex, Indicator, TimeSeriesValue
+from app.metrics.indicator_timing import TIMING_CLASS_MAP
 
 
 @pytest.fixture()
@@ -42,7 +43,11 @@ def session() -> Session:
 
 def _add_indicator(session: Session, canonical_code: str, frequency: str = "monthly") -> Indicator:
     indicator = Indicator(
-        source="test", source_code=canonical_code, canonical_code=canonical_code, frequency=frequency
+        source="test",
+        source_code=canonical_code,
+        canonical_code=canonical_code,
+        frequency=frequency,
+        timing_class=TIMING_CLASS_MAP.get(canonical_code),
     )
     session.add(indicator)
     session.flush()

@@ -46,3 +46,18 @@ def z_to_regime(z_value: float, bands: Iterable[tuple[float | None, float | None
             return label
     raise ValueError(f"z_value {z_value} did not match any regime band")
 
+
+def prefer_timing_class(
+    df: pd.DataFrame, *, preferred: str = "leading", timing_col: str = "timing_class"
+) -> pd.DataFrame:
+    """Return the subset of rows matching the preferred timing class when available.
+
+    If no rows carry the preferred timing class the original frame is returned to
+    avoid dropping all inputs. The helper is tolerant of missing timing metadata.
+    """
+
+    if timing_col not in df.columns:
+        return df
+    preferred_df = df[df[timing_col] == preferred]
+    return preferred_df if not preferred_df.empty else df
+

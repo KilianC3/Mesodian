@@ -27,7 +27,7 @@ def session() -> Session:
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
 
-    countries = [Country(id=iso, name=iso) for iso in COUNTRY_UNIVERSE]
+    countries = [Country(id=iso, name=iso, region="Test", income_group="Test") for iso in COUNTRY_UNIVERSE]
     session.add_all(countries)
 
     indicators = [

@@ -54,7 +54,7 @@ REGIONAL_INDEX_CODES: Set[str] = {
 }
 
 
-# Country level resilience, risk and policy metrics
+# Country level resilience, risk, policy and ESG metrics
 COUNTRY_METRIC_CODES: Set[str] = {
     "CR_RESILIENCE",
     "CR_MACRO_FISCAL",
@@ -76,6 +76,10 @@ COUNTRY_METRIC_CODES: Set[str] = {
     "DQ_COVERAGE",
     "DQ_FRESHNESS",
     "NET_SYS_IMPORTANCE",
+    "ESG_E_SOV",
+    "ESG_S_SOV",
+    "ESG_G_SOV",
+    "ESG_TOTAL_SOV",
 }
 
 
