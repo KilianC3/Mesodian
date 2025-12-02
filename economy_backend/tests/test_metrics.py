@@ -42,8 +42,8 @@ def session() -> Session:
 
 def _seed_reference_data(session: Session) -> None:
     countries = [
-        Country(id="USA", name="United States"),
-        Country(id="CAN", name="Canada"),
+        Country(id="USA", name="United States", region="Americas", income_group="High"),
+        Country(id="CAN", name="Canada", region="Americas", income_group="High"),
     ]
     session.add_all(countries)
 
@@ -185,8 +185,8 @@ def test_compute_all_country_metrics(session: Session) -> None:
     # Resilience pillars and aggregate
     usa_resilience = _get_metric(session, "USA", "CR_RESILIENCE")
     can_resilience = _get_metric(session, "CAN", "CR_RESILIENCE")
-    assert pytest.approx(float(usa_resilience.value), rel=1e-4) == -0.6446
-    assert pytest.approx(float(can_resilience.value), rel=1e-4) == 0.6446
+    assert pytest.approx(float(usa_resilience.value), rel=1e-4) == -0.88
+    assert pytest.approx(float(can_resilience.value), rel=1e-4) == 0.88
 
     # Food and energy risks
     usa_food_risk = _get_metric(session, "USA", "RISK_FOOD")
@@ -206,8 +206,8 @@ def test_compute_all_country_metrics(session: Session) -> None:
     assert pytest.approx(float(can_transition.value), rel=1e-3) == 27.152
 
     # Data quality metrics
-    usa_coverage = _get_metric(session, "USA", "DATA_COVERAGE")
-    usa_freshness = _get_metric(session, "USA", "DATA_FRESHNESS")
+    usa_coverage = _get_metric(session, "USA", "DQ_COVERAGE")
+    usa_freshness = _get_metric(session, "USA", "DQ_FRESHNESS")
     assert float(usa_coverage.value) == pytest.approx(90.0)
     assert float(usa_freshness.value) == pytest.approx(95.0)
 

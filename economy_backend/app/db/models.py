@@ -128,9 +128,13 @@ class RawOns(RawBase):
     __tablename__ = "raw_ons"
 
 
+class RawDbnomics(RawBase):
+    __tablename__ = "raw_dbnomics"
+
+
 class Country(Base):
     __tablename__ = "country"
-    __table_args__ = {"schema": "warehouse"}
+    __table_args__ = {"schema": "warehouse", "sqlite_autoincrement": True}
 
     id = Column(String(3), primary_key=True)
     name = Column(String, nullable=False)
@@ -211,7 +215,7 @@ class AssetPrice(Base):
         {"schema": "warehouse"},
     )
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(BigIntPKType, primary_key=True, autoincrement=True)
     asset_id = Column(Integer, ForeignKey("warehouse.asset.id"), nullable=False)
     date = Column(Date, nullable=False)
     open = Column(Numeric, nullable=True)
@@ -344,7 +348,7 @@ class EdgeMetric(Base):
             "source_node_id",
             "target_node_id",
             "web_code",
-            "as_of_year",
+            "year",
             "metric_code",
         ),
         {"schema": "graph"},
@@ -354,9 +358,26 @@ class EdgeMetric(Base):
     source_node_id = Column(BigInteger, ForeignKey("graph.node.id"), nullable=False)
     target_node_id = Column(BigInteger, ForeignKey("graph.node.id"), nullable=False)
     web_code = Column(String, nullable=True)
-    as_of_year = Column(Integer, nullable=False)
+    year = Column(Integer, nullable=False)
     metric_code = Column(String, nullable=False)
     value = Column(Numeric, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class SovereignESGRaw(Base):
+    __tablename__ = "sovereign_esg_raw"
+    __table_args__ = {"schema": "warehouse"}
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    country_code = Column(String(3), nullable=False)
+    year = Column(Integer, nullable=False)
+    provider = Column(String, nullable=False)
+    indicator_code = Column(String, nullable=False)
+    value = Column(Numeric, nullable=False)
+    data_metadata = Column("metadata", JSONType, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False

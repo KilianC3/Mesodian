@@ -1,0 +1,43 @@
+- pillar: "E"
+  indicators:
+    - provider: "WB_ESG"
+      indicator_code: "ENV_CO2_PER_GDP"
+      weight: 0.3
+      invert: true
+    - provider: "EPI"
+      indicator_code: "EPI_TOTAL"
+      weight: 0.3
+    - provider: "ND_GAIN"
+      indicator_code: "ND_GAIN_TOTAL"
+      weight: 0.2
+    - internal_metric: "CLIMATE_TOTAL_RISK"
+      weight: 0.2
+      invert: true
+- pillar: "S"
+  indicators:
+    - provider: "WB_ESG"
+      indicator_code: "SOC_EDU_INDEX"
+      weight: 0.25
+    - provider: "WB_ESG"
+      indicator_code: "SOC_HEALTH_INDEX"
+      weight: 0.25
+    - internal_metric: "HH_STRESS"
+      weight: 0.25
+      invert: true
+    - internal_metric: "RISK_FOOD"
+      weight: 0.25
+      invert: true
+- pillar: "G"
+  indicators:
+    - provider: "WGI"
+      indicator_code: "CONTROL_OF_CORRUPTION"
+      weight: 0.25
+    - provider: "WGI"
+      indicator_code: "RULE_OF_LAW"
+      weight: 0.25
+    - internal_metric: "CR_MACRO_FISCAL"
+      weight: 0.2
+    - internal_metric: "CR_FIN_SYSTEM"
+      weight: 0.2
+    - internal_metric: "POLICY_STANCE"
+      weight: 0.1

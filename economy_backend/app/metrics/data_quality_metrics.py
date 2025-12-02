@@ -43,8 +43,8 @@ def write_data_quality_metrics_for_year(session: Session, year: int) -> None:
         )
 
         for code, value in {
-            "DATA_COVERAGE": coverage,
-            "DATA_FRESHNESS": freshness,
+            "DQ_COVERAGE": coverage,
+            "DQ_FRESHNESS": freshness,
         }.items():
             metric = (
                 session.query(NodeMetric)

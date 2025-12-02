@@ -8,7 +8,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sqlalchemy.orm import Session
 
-from app.cycles.utils import standardise_series_to_z, z_to_regime
+from app.cycles.utils import prefer_timing_class, standardise_series_to_z, z_to_regime
 from app.db.models import GlobalCycleIndex, Indicator, TimeSeriesValue
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,7 @@ def _fetch_panel(session: Session, canonical_codes: Iterable[str]) -> pd.DataFra
             TimeSeriesValue.country_id,
             Indicator.canonical_code,
             TimeSeriesValue.value,
+            Indicator.timing_class,
         )
         .join(Indicator, Indicator.id == TimeSeriesValue.indicator_id)
         .filter(Indicator.canonical_code.in_(list(canonical_codes)))
@@ -38,12 +39,14 @@ def _fetch_panel(session: Session, canonical_codes: Iterable[str]) -> pd.DataFra
                 "country_id": rec.country_id,
                 "canonical_code": rec.canonical_code,
                 "value": float(rec.value),
+                "timing_class": getattr(rec, "timing_class", None),
             }
             for rec in records
         ]
     )
     df["date"] = pd.to_datetime(df["date"])
-    return df
+    df = prefer_timing_class(df)
+    return df.drop(columns=["timing_class"], errors="ignore")
 
 
 def _pivot_panel(df: pd.DataFrame) -> pd.DataFrame:

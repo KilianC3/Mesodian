@@ -41,8 +41,8 @@ def setup_session() -> Session:
     session = SessionLocal()
     session.add_all(
         [
-            Country(id="USA", name="United States"),
-            Country(id="CAN", name="Canada"),
+            Country(id="USA", name="United States", region="Americas", income_group="High"),
+            Country(id="CAN", name="Canada", region="Americas", income_group="High"),
         ]
     )
     indicators = [

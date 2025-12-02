@@ -17,7 +17,7 @@ def setup_session() -> Session:
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
-    session.add(Country(id="USA", name="United States"))
+    session.add(Country(id="USA", name="United States", region="Americas", income_group="High"))
     session.add(Indicator(id=1, source="FRED", source_code="CPIAUCSL", canonical_code="CPI_USA_MONTHLY"))
     session.add(Indicator(id=2, source="WDI", source_code="NY.GDP.MKTP.KD", canonical_code="GDP_REAL"))
     session.commit()

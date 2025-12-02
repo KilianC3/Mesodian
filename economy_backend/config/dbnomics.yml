@@ -1,0 +1,42 @@
+default_base_url: "https://api.db.nomics.world/v22"
+providers:
+  - group: "national_stats"
+    items:
+      - provider_code: "CSO"
+        description: "Central Statistics Office Ireland"
+      - provider_code: "INSEE"
+      - provider_code: "DESTATIS"
+      - provider_code: "ISTAT"
+      - provider_code: "SCB"
+      - provider_code: "INEGI"
+      - provider_code: "ROSSTAT"
+  - group: "central_banks"
+    items:
+      - provider_code: "BOE"
+      - provider_code: "BUNDESBANK"
+      - provider_code: "BOJ"
+      - provider_code: "BCB"
+      - provider_code: "SARB"
+      - provider_code: "SNB"
+  - group: "thematic"
+    items:
+      - provider_code: "ENTSOE"
+      - provider_code: "WTO"
+      - provider_code: "LBMA"
+indicators:
+  - code: "HOUSE_PRICE_IDX"
+    description: "National house price index for housing stress"
+    preferred_source: "national_stats"
+    dbnomics_search:
+      query: "house price index"
+      filters:
+        frequency: "Q"
+        unit: "index"
+  - code: "WAGE_IDX"
+    preferred_source: "national_stats"
+    dbnomics_search:
+      query: "average wage"
+  - code: "POWER_BALANCE"
+    preferred_source: "thematic"
+    dbnomics_search:
+      query: "electricity demand"

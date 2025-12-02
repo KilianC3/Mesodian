@@ -33,9 +33,9 @@ def session() -> Session:
 def _seed_countries(session: Session) -> None:
     session.add_all(
         [
-            Country(id="USA", name="United States"),
-            Country(id="CAN", name="Canada"),
-            Country(id="MEX", name="Mexico"),
+            Country(id="USA", name="United States", region="Americas", income_group="High"),
+            Country(id="CAN", name="Canada", region="Americas", income_group="High"),
+            Country(id="MEX", name="Mexico", region="Americas", income_group="Upper"),
         ]
     )
     session.commit()
