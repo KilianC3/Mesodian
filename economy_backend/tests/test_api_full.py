@@ -179,6 +179,26 @@ def seed_data(session: Session) -> None:
                 weight_value=210000000000,
                 meta_json={"year": 2023},
             ),
+            Edge(
+                id=3,
+                source_node_id=1,
+                target_node_id=2,
+                edge_type=EdgeType.TRADE_EXPOSURE,
+                layer_id=LayerId.TRADE,
+                weight_type="VALUE_USD",
+                weight_value=350000000000,
+                meta_json={"year": 2023},
+            ),
+            Edge(
+                id=4,
+                source_node_id=1,
+                target_node_id=3,
+                edge_type=EdgeType.TRADE_EXPOSURE,
+                layer_id=LayerId.TRADE,
+                weight_type="VALUE_USD",
+                weight_value=210000000000,
+                meta_json={"year": 2023},
+            ),
         ]
     )
 
@@ -262,3 +282,31 @@ def test_dashboard(client: TestClient):
     data = response.json()
     assert data["trade_summary"]["net_system_importance"] == 88.0
     assert len(data["trade_summary"]["top_partners"]) == 2
+
+
+def test_country_web_defaults_to_trade_exposure(client: TestClient):
+    response = client.get("/api/webs/country/USA/2023")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["edge_type"] == EdgeType.TRADE_EXPOSURE.value
+    assert len(payload["nodes"]) == 3
+    assert len(payload["edges"]) == 2
+
+
+def test_country_web_accepts_trade_exposure_query_value(client: TestClient):
+    response = client.get(
+        "/api/webs/country/USA/2023",
+        params={"edge_type": EdgeType.TRADE_EXPOSURE.value},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["edge_type"] == EdgeType.TRADE_EXPOSURE.value
+    assert len(payload["edges"]) == 2
+
+
+def test_country_web_rejects_invalid_edge_type(client: TestClient):
+    response = client.get(
+        "/api/webs/country/USA/2023",
+        params={"edge_type": "invalid"},
+    )
+    assert response.status_code == 422

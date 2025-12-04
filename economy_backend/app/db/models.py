@@ -372,6 +372,7 @@ class Node(Base):
 
 
 class EdgeType(str, enum.Enum):
+    TRADE_EXPOSURE = "trade_exposure"
     FLOW = "FLOW"
     INFLUENCE = "INFLUENCE"
     MEMBERSHIP = "MEMBERSHIP"
