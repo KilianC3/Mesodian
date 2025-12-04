@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 import argparse
 
 from sqlalchemy.orm import Session
 
-from app.graph.algorithms import compute_trade_centrality
 from app.metrics.composite_climate_total_risk import compute_climate_total_risk_for_year
 from app.metrics.composite_household_housing import compute_household_housing_composite_for_year
 from app.metrics.country_resilience import compute_country_resilience_for_year
 from app.metrics.credit_excess import compute_credit_excess_for_year
 from app.metrics.critical_import_dependence import compute_critical_import_dependence_for_year
 from app.metrics.data_quality_metrics import write_data_quality_metrics_for_year
+from app.metrics.graph_centrality import compute_graph_centrality_and_roles
 from app.metrics.housing_stress import compute_housing_stress_for_year
 from app.metrics.household_stress import compute_household_stress_for_year
 from app.metrics.inflation_pressure import compute_inflation_pressure_for_year
@@ -45,7 +43,7 @@ def compute_all_country_metrics(session: Session, year: int) -> None:
     compute_inflation_pressure_for_year(session, year)
     compute_credit_excess_for_year(session, year)
     write_data_quality_metrics_for_year(session, year)
-    compute_trade_centrality(session, year)
+    compute_graph_centrality_and_roles(session, year)
     compute_household_housing_composite_for_year(session, year)
     compute_climate_total_risk_for_year(session, year)
     compute_sovereign_esg_for_year(session, year)

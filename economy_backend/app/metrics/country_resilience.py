@@ -6,37 +6,8 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.models import (
-    Country,
-    CountryYearFeatures,
-    Node,
-    NodeMetric,
-    NodeMetricContrib,
-)
-
-
-def _get_or_create_country_node(session: Session, country_id: str) -> Node:
-    node = (
-        session.query(Node)
-        .filter(Node.ref_type == "country", Node.ref_id == country_id)
-        .one_or_none()
-    )
-    if node:
-        return node
-
-    country = session.query(Country).filter(Country.id == country_id).one_or_none()
-    next_id = session.query(func.coalesce(func.max(Node.id), 0)).scalar() or 0
-    label = country.name if country else country_id
-    node = Node(
-        id=int(next_id) + 1,
-        node_type="country",
-        ref_type="country",
-        ref_id=country_id,
-        label=label,
-    )
-    session.add(node)
-    session.flush()
-    return node
+from app.db.models import CountryYearFeatures, NodeMetric, NodeMetricContrib
+from app.metrics.utils import get_or_create_country_node
 
 
 def _standardize(values: Dict[str, Optional[float]]) -> Dict[str, Optional[float]]:
@@ -150,7 +121,7 @@ def compute_country_resilience_for_year(session: Session, year: int) -> None:
     }
 
     for row in rows:
-        node = _get_or_create_country_node(session, row.country_id)
+        node = get_or_create_country_node(session, row.country_id)
         pillar_scores: Dict[str, Optional[float]] = {}
         pillar_feature_contribs: Dict[str, List[Tuple[str, float]]] = {}
 

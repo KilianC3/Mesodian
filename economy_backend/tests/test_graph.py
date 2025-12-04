@@ -9,7 +9,19 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from app.db.models import Base, Country, Edge, Node, NodeMetric, TradeFlow  # noqa: E402
+from app.db.models import (
+    Base,
+    Country,
+    Edge,
+    Node,
+    NodeCategory,
+    NodeMetric,
+    NodeType,
+    ScaleLevel,
+    TradeFlow,
+    ValueChainPosition,
+)  # noqa: E402
+from app.graph.schema_helpers import Direction, FlowType, LayerId, RelationshipFamily
 from app.graph.algorithms import compute_trade_centrality  # noqa: E402
 from app.graph.projection import project_country_nodes, project_trade_edges  # noqa: E402
 
@@ -84,11 +96,12 @@ def test_project_and_centrality(session: Session) -> None:
 
     nodes = session.query(Node).all()
     assert len(nodes) == 3
-    assert all(node.node_type == "Country" for node in nodes)
-    assert all(node.category_role == "Macro" for node in nodes)
-    assert all(node.system_layer == "Macro" for node in nodes)
+    assert all(node.node_type == NodeType.COUNTRY for node in nodes)
+    assert all(node.node_category == NodeCategory.POLICY_REGULATION for node in nodes)
+    assert all(node.value_chain_position == ValueChainPosition.CROSS_CUTTING for node in nodes)
+    assert all(node.scale_level == ScaleLevel.MACRO for node in nodes)
 
-    node_map = {node.ref_id: node for node in nodes}
+    node_map = {node.country_code: node for node in nodes}
 
     edges = session.query(Edge).all()
     assert len(edges) == 3
@@ -103,9 +116,19 @@ def test_project_and_centrality(session: Session) -> None:
         source_ref = next(ref for ref, node in node_map.items() if node.id == edge.source_node_id)
         target_ref = next(ref for ref, node in node_map.items() if node.id == edge.target_node_id)
         seen_connections.add(
-            (source_ref, target_ref, edge.attrs.get("hs_section"), edge.attrs.get("flow_type"), float(edge.weight))
+            (
+                source_ref,
+                target_ref,
+                edge.meta_json.get("hs_section") if edge.meta_json else None,
+                edge.meta_json.get("flow_type") if edge.meta_json else None,
+                float(edge.weight_value),
+            )
         )
-        assert edge.attrs.get("year") == year
+        assert edge.meta_json.get("year") == year
+        assert edge.rel_family == RelationshipFamily.TRADE
+        assert edge.flow_type == FlowType.MONEY
+        assert edge.layer_id == LayerId.TRADE
+        assert edge.direction == Direction.OUT
     assert seen_connections == expected_connections
 
     metrics = (

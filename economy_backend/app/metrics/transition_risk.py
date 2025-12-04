@@ -8,36 +8,12 @@ from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
 from app.db.models import (
-    Country,
     CountryYearFeatures,
     Indicator,
-    Node,
     NodeMetric,
     TimeSeriesValue,
 )
-
-
-def _get_or_create_country_node(session: Session, country_id: str) -> Node:
-    node = (
-        session.query(Node)
-        .filter(Node.ref_type == "country", Node.ref_id == country_id)
-        .one_or_none()
-    )
-    if node:
-        return node
-
-    country = session.query(Country).filter(Country.id == country_id).one_or_none()
-    next_id = session.query(func.coalesce(func.max(Node.id), 0)).scalar() or 0
-    node = Node(
-        id=int(next_id) + 1,
-        node_type="country",
-        ref_type="country",
-        ref_id=country_id,
-        label=country.name if country else country_id,
-    )
-    session.add(node)
-    session.flush()
-    return node
+from app.metrics.utils import get_or_create_country_node
 
 
 def _standardize(values: Dict[str, Optional[float]]) -> Dict[str, Optional[float]]:
@@ -124,7 +100,7 @@ def compute_transition_risk_for_year(session: Session, year: int) -> None:
     innovation_z = _standardize(innovation_values)
 
     for row in rows:
-        node = _get_or_create_country_node(session, row.country_id)
+        node = get_or_create_country_node(session, row.country_id)
 
         intensity_component = _z_to_unit(intensity_z.get(row.country_id))
         change_component = _z_to_unit(change_z.get(row.country_id))

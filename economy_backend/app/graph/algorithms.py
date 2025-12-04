@@ -3,29 +3,25 @@ from __future__ import annotations
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.models import Edge, Node, NodeMetric
+from app.db.models import Edge, EdgeType, Node, NodeMetric, NodeType
 
 
 def compute_trade_centrality(session: Session, year: int) -> None:
-    country_nodes = (
-        session.query(Node)
-        .filter(Node.node_type == "Country", Node.ref_type == "Country")
-        .all()
-    )
+    country_nodes = session.query(Node).filter(Node.node_type == NodeType.COUNTRY).all()
     if not country_nodes:
         return
 
-    edges = session.query(Edge).filter(Edge.edge_type == "trade_exposure").all()
+    edges = session.query(Edge).filter(Edge.edge_type == EdgeType.FLOW).all()
 
     partners = {node.id: set() for node in country_nodes}
     weighted_degree = {node.id: 0.0 for node in country_nodes}
 
     for edge in edges:
-        attrs = edge.attrs or {}
+        attrs = edge.meta_json or {}
         if attrs.get("year") != year:
             continue
 
-        weight = float(edge.weight) if edge.weight is not None else 0.0
+        weight = float(edge.weight_value) if edge.weight_value is not None else 0.0
 
         if edge.source_node_id in weighted_degree:
             weighted_degree[edge.source_node_id] += weight
