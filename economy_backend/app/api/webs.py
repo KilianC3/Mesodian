@@ -72,7 +72,7 @@ def country_web(
     country_id: str,
     year: int,
     depth: int = Query(default=1, ge=1),
-    edge_type: str = Query(default="trade_exposure"),
+    edge_type: EdgeType = Query(default=EdgeType.TRADE_EXPOSURE),
     db: Session = Depends(get_db),
 ) -> Dict:
     country_id = country_id.upper()
@@ -137,7 +137,7 @@ def country_path(
     source_country_id: str,
     target_country_id: str,
     year: int,
-    edge_type: str = Query(default="trade_exposure"),
+    edge_type: EdgeType = Query(default=EdgeType.FLOW),
     db: Session = Depends(get_db),
 ) -> Dict:
     source_country_id = source_country_id.upper()
@@ -154,7 +154,7 @@ def country_path(
     source_node = node_by_country[source_country_id]
     target_node = node_by_country[target_country_id]
 
-    all_edges = db.query(Edge).filter(Edge.edge_type == EdgeType.FLOW).all()
+    all_edges = db.query(Edge).filter(Edge.edge_type == edge_type).all()
     edges = _filter_edges_by_year(all_edges, year)
 
     adjacency: Dict[int, List[int]] = {}
