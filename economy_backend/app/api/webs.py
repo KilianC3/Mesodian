@@ -8,22 +8,22 @@ from sqlalchemy.orm import Session
 
 from app.config.country_universe import COUNTRY_UNIVERSE
 from app.db.engine import get_db
-from app.db.models import Edge, Node
+from app.db.models import Edge, EdgeType, Node, NodeType
 
 
 router = APIRouter()
 
 
 def _edge_matches_year(edge: Edge, year: int) -> bool:
-    if edge.attrs and isinstance(edge.attrs, dict):
-        edge_year = edge.attrs.get("year")
+    if edge.meta_json and isinstance(edge.meta_json, dict):
+        edge_year = edge.meta_json.get("year")
         if edge_year is not None:
             return int(edge_year) == int(year)
     return True
 
 
 def _serialize_node(node: Node) -> Dict:
-    return {"id": node.id, "country_id": node.ref_id, "label": node.label}
+    return {"id": node.id, "country_id": node.country_code or node.ref_id, "label": node.label or node.name}
 
 
 @router.get("/webs/trade/{year}")
@@ -33,16 +33,12 @@ def trade_web(
     top_n_edges: Optional[int] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> Dict:
-    edge_query = (
-        db.query(Edge)
-        .filter(Edge.edge_type == "trade_exposure")
-        .order_by(Edge.weight.desc())
-    )
+    edge_query = db.query(Edge).filter(Edge.edge_type == EdgeType.FLOW).order_by(Edge.weight_value.desc())
     if top_n_edges:
         edge_query = edge_query.limit(top_n_edges)
 
     edges = [edge for edge in edge_query.all() if _edge_matches_year(edge, year)]
-    edges = [edge for edge in edges if edge.weight is None or float(edge.weight) >= min_value_usd]
+    edges = [edge for edge in edges if edge.weight_value is None or float(edge.weight_value) >= min_value_usd]
 
     node_ids: Set[int] = set()
     for edge in edges:
@@ -59,7 +55,7 @@ def trade_web(
             {
                 "source": edge.source_node_id,
                 "target": edge.target_node_id,
-                "weight": float(edge.weight) if edge.weight is not None else None,
+                "weight": float(edge.weight_value) if edge.weight_value is not None else None,
             }
             for edge in edges
             if edge.source_node_id in node_map and edge.target_node_id in node_map
@@ -85,7 +81,7 @@ def country_web(
 
     root_node = (
         db.query(Node)
-        .filter(Node.ref_type == "country", Node.ref_id == country_id)
+        .filter(Node.node_type == NodeType.COUNTRY, Node.country_code == country_id)
         .first()
     )
     if not root_node:
@@ -121,7 +117,7 @@ def country_web(
         {
             "source": edge.source_node_id,
             "target": edge.target_node_id,
-            "weight": float(edge.weight) if edge.weight is not None else None,
+            "weight": float(edge.weight_value) if edge.weight_value is not None else None,
         }
         for edge in filtered_edges
         if edge.source_node_id in collected_ids and edge.target_node_id in collected_ids
@@ -150,15 +146,15 @@ def country_path(
         if cid not in COUNTRY_UNIVERSE:
             raise HTTPException(status_code=404, detail="Country not supported")
 
-    nodes = db.query(Node).filter(Node.ref_type == "country").all()
-    node_by_country = {node.ref_id: node for node in nodes}
+    nodes = db.query(Node).filter(Node.node_type == NodeType.COUNTRY).all()
+    node_by_country = {node.country_code or node.ref_id: node for node in nodes}
     if source_country_id not in node_by_country or target_country_id not in node_by_country:
         raise HTTPException(status_code=404, detail="Country node not found")
 
     source_node = node_by_country[source_country_id]
     target_node = node_by_country[target_country_id]
 
-    all_edges = db.query(Edge).filter(Edge.edge_type == edge_type).all()
+    all_edges = db.query(Edge).filter(Edge.edge_type == EdgeType.FLOW).all()
     edges = _filter_edges_by_year(all_edges, year)
 
     adjacency: Dict[int, List[int]] = {}

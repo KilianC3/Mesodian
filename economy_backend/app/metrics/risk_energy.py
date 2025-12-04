@@ -5,30 +5,8 @@ from typing import Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.models import Country, CountryYearFeatures, Node, NodeMetric, TradeFlow
-
-
-def _get_or_create_country_node(session: Session, country_id: str) -> Node:
-    node = (
-        session.query(Node)
-        .filter(Node.ref_type == "country", Node.ref_id == country_id)
-        .one_or_none()
-    )
-    if node:
-        return node
-
-    country = session.query(Country).filter(Country.id == country_id).one_or_none()
-    next_id = session.query(func.coalesce(func.max(Node.id), 0)).scalar() or 0
-    node = Node(
-        id=int(next_id) + 1,
-        node_type="country",
-        ref_type="country",
-        ref_id=country_id,
-        label=country.name if country else country_id,
-    )
-    session.add(node)
-    session.flush()
-    return node
+from app.db.models import CountryYearFeatures, NodeMetric, TradeFlow
+from app.metrics.utils import get_or_create_country_node
 
 
 def _compute_trade_concentration(
@@ -61,7 +39,7 @@ def compute_energy_risk_for_year(session: Session, year: int) -> None:
         .all()
     )
     for row in rows:
-        node = _get_or_create_country_node(session, row.country_id)
+        node = get_or_create_country_node(session, row.country_id)
         import_dep = (
             float(row.energy_import_dep) if row.energy_import_dep is not None else 0.0
         )

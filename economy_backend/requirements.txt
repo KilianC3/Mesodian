@@ -11,3 +11,4 @@ pyyaml
 pytest
 scikit-learn
 statsmodels
+networkx

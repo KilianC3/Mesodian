@@ -3,16 +3,18 @@ from __future__ import annotations
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.models import Country, Edge, Node, TradeFlow
+from app.db.models import Country, Edge, Node, NodeType, TradeFlow
+from app.graph.schema_helpers import (
+    FlowType,
+    LayerId,
+    RelationshipFamily,
+    make_country_node,
+    make_flow_edge,
+)
 
 
 def project_country_nodes(session: Session) -> None:
-    existing_nodes = {
-        node.ref_id: node
-        for node in session.query(Node)
-        .filter(Node.node_type == "Country", Node.ref_type == "Country")
-        .all()
-    }
+    existing_nodes = {node.country_code: node for node in session.query(Node).filter(Node.node_type == NodeType.COUNTRY).all()}
     countries = session.query(Country).all()
 
     next_id = session.query(func.coalesce(func.max(Node.id), 0)).scalar() or 0
@@ -21,14 +23,11 @@ def project_country_nodes(session: Session) -> None:
         if country.id in existing_nodes:
             continue
         next_id += 1
-        node = Node(
-            id=next_id,
-            node_type="Country",
-            ref_type="Country",
-            ref_id=country.id,
-            label=country.name,
-            category_role="Macro",
-            system_layer="Macro",
+        node = make_country_node(
+            country_code=country.id,
+            region_code=country.region,
+            node_id=next_id,
+            name=country.name,
         )
         session.add(node)
     session.commit()
@@ -36,10 +35,7 @@ def project_country_nodes(session: Session) -> None:
 
 def project_trade_edges(session: Session, year: int) -> None:
     country_nodes = {
-        node.ref_id: node
-        for node in session.query(Node)
-        .filter(Node.node_type == "Country", Node.ref_type == "Country")
-        .all()
+        node.country_code: node for node in session.query(Node).filter(Node.node_type == NodeType.COUNTRY).all()
     }
 
     trade_flows = session.query(TradeFlow).filter(TradeFlow.year == year).all()
@@ -52,13 +48,16 @@ def project_trade_edges(session: Session, year: int) -> None:
             continue
 
         next_id += 1
-        edge = Edge(
-            id=next_id,
+        edge = make_flow_edge(
+            edge_id=next_id,
             source_node_id=source_node.id,
             target_node_id=target_node.id,
-            edge_type="trade_exposure",
-            weight=flow.value_usd,
-            attrs={
+            rel_family=RelationshipFamily.TRADE,
+            flow_type=FlowType.MONEY,
+            layer_id=LayerId.TRADE,
+            weight_type="VALUE_USD",
+            weight_value=flow.value_usd,
+            meta_json={
                 "hs_section": flow.hs_section,
                 "flow_type": flow.flow_type,
                 "year": flow.year,

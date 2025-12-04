@@ -65,26 +65,26 @@ def compute_edge_relationship_metrics_for_year(session: Session, year: int) -> N
 
     webs: DefaultDict[str, List[Edge]] = defaultdict(list)
     for edge in edges:
-        attrs = edge.attrs or {}
+        attrs = edge.meta_json or {}
         if attrs.get("year") != year:
             continue
-        web_code = attrs.get("web_code") or edge.edge_type or "generic"
+        web_code = edge.web_code or attrs.get("web_code") or (edge.layer_id.value if edge.layer_id else "generic")
         webs[web_code].append(edge)
 
     for web_code, web_edges in webs.items():
-        total_flow = sum(float(e.weight or 0.0) for e in web_edges)
+        total_flow = sum(float(e.weight_value or 0.0) for e in web_edges)
         outgoing: DefaultDict[int, float] = defaultdict(float)
         incoming: DefaultDict[int, float] = defaultdict(float)
         degree: DefaultDict[int, int] = defaultdict(int)
         for edge in web_edges:
-            weight = float(edge.weight or 0.0)
+            weight = float(edge.weight_value or 0.0)
             outgoing[edge.source_node_id] += weight
             incoming[edge.target_node_id] += weight
             degree[edge.source_node_id] += 1
             degree[edge.target_node_id] += 1
 
         for edge in web_edges:
-            weight = float(edge.weight or 0.0)
+            weight = float(edge.weight_value or 0.0)
             share_out = weight / outgoing[edge.source_node_id] if outgoing[edge.source_node_id] else 0.0
             share_in = weight / incoming[edge.target_node_id] if incoming[edge.target_node_id] else 0.0
             dependence = _bounded(((share_out + share_in) / 2.0) * 100.0)

@@ -67,10 +67,10 @@ def _collect_webs(session: Session, year: int) -> Dict[str, List[Edge]]:
     webs: DefaultDict[str, List[Edge]] = defaultdict(list)
     edges = session.query(Edge).all()
     for edge in edges:
-        attrs = edge.attrs or {}
+        attrs = edge.meta_json or {}
         if attrs.get("year") != year:
             continue
-        web_code = attrs.get("web_code") or edge.edge_type or "generic"
+        web_code = edge.web_code or attrs.get("web_code") or (edge.layer_id.value if edge.layer_id else "generic")
         webs[web_code].append(edge)
     return webs
 
@@ -90,12 +90,12 @@ def compute_web_metrics_for_year(session: Session, year: int) -> None:
 
     for web_code, edges in webs.items():
         nodes = _node_sets(edges)
-        total_flow = sum(float(edge.weight or 0.0) for edge in edges)
+        total_flow = sum(float(edge.weight_value or 0.0) for edge in edges)
 
         degree: DefaultDict[int, float] = defaultdict(float)
         adjacency: DefaultDict[int, Set[int]] = defaultdict(set)
         for edge in edges:
-            weight = float(edge.weight or 0.0)
+            weight = float(edge.weight_value or 0.0)
             degree[edge.source_node_id] += weight
             degree[edge.target_node_id] += weight
             adjacency[edge.source_node_id].add(edge.target_node_id)

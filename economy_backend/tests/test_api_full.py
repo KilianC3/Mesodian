@@ -29,9 +29,12 @@ from app.db.models import (  # noqa: E402
     Country,
     CountryYearFeatures,
     Edge,
+    EdgeType,
     Indicator,
     Node,
+    NodeType,
     NodeMetric,
+    LayerId,
     TimeSeriesValue,
     TradeFlow,
 )
@@ -135,9 +138,9 @@ def seed_data(session: Session) -> None:
     session.add(features)
 
     nodes = [
-        Node(id=1, node_type="country", ref_type="country", ref_id="USA", label="United States"),
-        Node(id=2, node_type="country", ref_type="country", ref_id="DEU", label="Germany"),
-        Node(id=3, node_type="country", ref_type="country", ref_id="MEX", label="Mexico"),
+        Node(id=1, name="United States", node_type=NodeType.COUNTRY, ref_type="country", ref_id="USA", label="United States", country_code="USA"),
+        Node(id=2, name="Germany", node_type=NodeType.COUNTRY, ref_type="country", ref_id="DEU", label="Germany", country_code="DEU"),
+        Node(id=3, name="Mexico", node_type=NodeType.COUNTRY, ref_type="country", ref_id="MEX", label="Mexico", country_code="MEX"),
     ]
     session.add_all(nodes)
 
@@ -156,8 +159,26 @@ def seed_data(session: Session) -> None:
 
     session.add_all(
         [
-            Edge(id=1, source_node_id=1, target_node_id=2, edge_type="trade_exposure", weight=350000000000, attrs={"year": 2023}),
-            Edge(id=2, source_node_id=1, target_node_id=3, edge_type="trade_exposure", weight=210000000000, attrs={"year": 2023}),
+            Edge(
+                id=1,
+                source_node_id=1,
+                target_node_id=2,
+                edge_type=EdgeType.FLOW,
+                layer_id=LayerId.TRADE,
+                weight_type="VALUE_USD",
+                weight_value=350000000000,
+                meta_json={"year": 2023},
+            ),
+            Edge(
+                id=2,
+                source_node_id=1,
+                target_node_id=3,
+                edge_type=EdgeType.FLOW,
+                layer_id=LayerId.TRADE,
+                weight_type="VALUE_USD",
+                weight_value=210000000000,
+                meta_json={"year": 2023},
+            ),
         ]
     )
 
