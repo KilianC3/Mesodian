@@ -40,3 +40,4 @@
 - 2025-03-18 – Agent – Reviewed schema alignment and ensured the trade exposure enum migration executes in autocommit mode to satisfy PostgreSQL requirements; reinforced guidance on keeping migrations consistent with ORM models.
 - 2025-03-19 – Agent – Realigned API integration tests to reuse Alembic-migrated database fixtures instead of SQLite scaffolding, ensuring endpoint coverage reflects the Postgres schema.
 - 2025-03-20 – Agent – Hardened API integration test imports by enforcing `DATABASE_URL` presence and injecting the repository root onto `sys.path` within shared pytest fixtures to avoid module resolution conflicts.
+- 2025-03-21 – Agent – Resolved lingering merge concerns in the API integration test by cleaning dependency override teardown to prevent cross-test contamination.

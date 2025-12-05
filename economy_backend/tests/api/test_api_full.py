@@ -3,6 +3,7 @@
 
 import datetime as dt
 import os
+from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -171,12 +172,18 @@ def seeded_session(db_session: Session) -> Session:
 
 
 @pytest.fixture()
-def client(seeded_session: Session) -> TestClient:
+def client(seeded_session: Session) -> Generator[TestClient, None, None]:
+    """Provide a TestClient wired to the seeded session and clean overrides after use."""
+
     def override_get_db():
         yield seeded_session
 
     app.dependency_overrides[get_db] = override_get_db
-    return TestClient(app)
+    client = TestClient(app)
+    try:
+        yield client
+    finally:
+        app.dependency_overrides.pop(get_db, None)
 
 
 def test_reference_countries(client: TestClient):
