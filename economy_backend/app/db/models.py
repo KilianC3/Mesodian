@@ -376,6 +376,7 @@ class EdgeType(str, enum.Enum):
     INFLUENCE = "INFLUENCE"
     MEMBERSHIP = "MEMBERSHIP"
     CONSTRAINT = "CONSTRAINT"
+    TRADE_EXPOSURE = "TRADE_EXPOSURE"
 
 
 class RelationshipFamily(str, enum.Enum):
