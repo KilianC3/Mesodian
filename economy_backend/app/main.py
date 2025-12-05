@@ -1,3 +1,10 @@
+"""
+Entry point for the FastAPI application that exposes read-only economic
+analytics APIs. Routers cover reference data, time series, country features,
+metrics, webs, and dashboard summaries. This module wires configuration and
+middleware; uvicorn loads `app` when running the service.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

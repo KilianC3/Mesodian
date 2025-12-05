@@ -1,3 +1,9 @@
+"""
+ORM models defining raw provider payloads, warehouse staging tables, feature
+panels, cycles, graph nodes/edges, and metric storage across the backend.
+These classes back ingestion, analytics, and API layers through SQLAlchemy.
+"""
+
 from __future__ import annotations
 
 import enum

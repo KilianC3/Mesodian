@@ -1,3 +1,9 @@
+"""
+Country-level energy dependence and diversification metrics built from trade
+flows and country feature panels. Outputs populate `node_metric` for
+downstream dashboards and web scoring.
+"""
+
 from __future__ import annotations
 
 from typing import Optional

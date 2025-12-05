@@ -1,3 +1,9 @@
+"""
+Database engine and session helpers for the backend infrastructure layer.
+The module centralizes SQLAlchemy engine creation from environment settings
+and exposes context-managed sessions for API routes, metrics jobs, and tests.
+"""
+
 from contextlib import contextmanager
 from typing import Generator
 

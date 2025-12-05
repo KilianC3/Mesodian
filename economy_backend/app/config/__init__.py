@@ -1,3 +1,9 @@
+"""
+Configuration helpers built on Pydantic settings. Centralizes environment
+variables for the backend such as database URLs, API keys, and runtime flags
+so ingestion, API routes, and batch jobs share consistent defaults.
+"""
+
 from functools import lru_cache
 from typing import Optional
 

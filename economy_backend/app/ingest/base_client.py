@@ -1,3 +1,9 @@
+"""
+Shared HTTP client infrastructure for ingestion pipelines. Implements retry
+policies, backoff, and resilience helpers that provider-specific clients reuse
+to fetch economic, trade, finance, and ESG data reliably.
+"""
+
 import asyncio
 import logging
 import random

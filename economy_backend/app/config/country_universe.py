@@ -1,3 +1,9 @@
+"""
+Canonical list of supported country ISO3 codes used across ingestion, feature
+engineering, and metrics pipelines. This universe guides fixtures and
+validations without duplicating lists in downstream modules.
+"""
+
 from typing import List
 
 COUNTRY_UNIVERSE = [
