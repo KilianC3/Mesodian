@@ -26,7 +26,7 @@ def upgrade() -> None:
     op.execute(
         sa.text(
             f"ALTER TYPE {GRAPH_SCHEMA}.{EDGE_TYPE_ENUM} ADD VALUE IF NOT EXISTS 'TRADE_EXPOSURE'"
-        )
+        ).execution_options(isolation_level="AUTOCOMMIT")
     )
 
 
