@@ -1,3 +1,5 @@
+"""Tests for graph schema helpers, projections, and centrality metrics."""
+
 from app.db.models import (
     Certainty,
     Direction,

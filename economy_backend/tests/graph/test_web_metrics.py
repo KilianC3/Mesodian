@@ -1,3 +1,5 @@
+"""Tests for graph schema helpers, projections, and centrality metrics."""
+
 import os
 import sys
 from pathlib import Path

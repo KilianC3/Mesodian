@@ -1,3 +1,5 @@
+"""Unit tests for FastAPI health and root endpoints using dummy settings."""
+
 import os
 
 os.environ.setdefault("DATABASE_URL", "sqlite://")

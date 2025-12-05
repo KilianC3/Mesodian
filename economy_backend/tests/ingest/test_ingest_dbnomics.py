@@ -1,14 +1,9 @@
-import sys
-from pathlib import Path
+"""Unit tests for DB.nomics ingestion pipeline using stubbed client responses."""
 
 import pandas as pd
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
 
 from app.db.models import Base, RawDbnomics  # noqa: E402
 from app.ingest.dbnomics_client import SeriesInfo  # noqa: E402
