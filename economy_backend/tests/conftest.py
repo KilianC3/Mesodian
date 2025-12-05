@@ -1,6 +1,7 @@
 """Shared pytest fixtures for database-backed integration tests."""
 
 import os
+import sys
 from pathlib import Path
 from typing import Generator
 
@@ -10,6 +11,13 @@ from alembic.config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
+
+
+# Ensure repository root is importable for `app` package lookups when tests
+# are executed from different working directories.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 
 @pytest.fixture(scope="session")

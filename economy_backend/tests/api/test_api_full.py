@@ -11,6 +11,9 @@ from sqlalchemy.orm import Session
 
 pytestmark = pytest.mark.integration
 
+if not os.environ.get("DATABASE_URL"):
+    pytest.skip("DATABASE_URL is required for API integration tests", allow_module_level=True)
+
 # Configure environment for Settings defaults used by the API app
 os.environ.setdefault("FRED_API_KEY", "test")
 os.environ.setdefault("EIA_API_KEY", "test")
