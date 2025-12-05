@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+"""
+Graph algorithms for computing centrality metrics on trade webs.
+
+This graph-layer module calculates simple degree/partner centrality for country
+nodes based on flow edges and writes results into ``graph.node_metric``. It is
+invoked by metric orchestrators when updating web metrics.
+"""
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -7,6 +15,7 @@ from app.db.models import Edge, EdgeType, Node, NodeMetric, NodeType
 
 
 def compute_trade_centrality(session: Session, year: int) -> None:
+    """Compute partner counts and weighted degree centrality for trade webs."""
     country_nodes = session.query(Node).filter(Node.node_type == NodeType.COUNTRY).all()
     if not country_nodes:
         return

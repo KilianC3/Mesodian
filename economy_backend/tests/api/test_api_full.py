@@ -1,7 +1,7 @@
+"""API contract tests against in-memory SQLite fixtures."""
+
 import datetime as dt
 import os
-import sys
-from pathlib import Path
 from typing import Generator
 
 import pytest
@@ -10,12 +10,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import Session, sessionmaker
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
 # Configure environment for Settings
-os.environ.setdefault("POSTGRES_URL", "sqlite:///:memory:")
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("FRED_API_KEY", "test")
 os.environ.setdefault("EIA_API_KEY", "test")
 os.environ.setdefault("COMTRADE_API_KEY", "test")

@@ -1,3 +1,12 @@
+"""Provider-agnostic HTTP and SDMX client utilities for ingestion.
+
+This module underpins the ingestion layer by standardizing retry/backoff logic
+for REST providers (FRED, WDI, Comtrade, etc.) and by exposing a thin SDMX
+helper for providers served via DB.nomics-style APIs. The main entry point is
+``AsyncHttpClient`` for async GET calls, which is constructed via
+``get_provider_client`` inside provider-specific clients.
+"""
+
 import asyncio
 import logging
 import random
@@ -33,6 +42,8 @@ PROVIDER_LIMITS: Dict[str, ProviderLimits] = {
 
 
 class AsyncHttpClient:
+    """Lightweight async GET client with retry/backoff for ingestion services."""
+
     def __init__(
         self,
         base_url: str,
@@ -115,6 +126,7 @@ class AsyncHttpClient:
             raise HttpClientError(message) from exc
 
     async def get_json(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Fetch JSON from ``path`` and raise ``HttpClientError`` on failure."""
         response = await self._request(path, params=params)
         try:
             return response.json()
@@ -122,11 +134,13 @@ class AsyncHttpClient:
             raise HttpClientError(f"Failed to decode JSON response from {response.url}") from exc
 
     async def get_text(self, path: str, params: Optional[Dict[str, Any]] = None) -> str:
+        """Fetch text from ``path`` with retry/backoff semantics."""
         response = await self._request(path, params=params)
         return response.text
 
 
 def get_provider_client(provider_name: str, base_url: str) -> AsyncHttpClient:
+    """Instantiate an ``AsyncHttpClient`` with provider-specific rate limits."""
     limits = PROVIDER_LIMITS.get(provider_name.upper())
     if limits is None:
         raise ValueError(f"Unknown provider: {provider_name}")
@@ -141,6 +155,7 @@ def get_provider_client(provider_name: str, base_url: str) -> AsyncHttpClient:
 def fetch_sdmx_dataset(
     base_url: str, dataset_code: str, params: Optional[Dict[str, Any]] = None
 ):
+    """Fetch and parse an SDMX dataset into a pandas DataFrame."""
     try:
         import pandas as pd
         import pandasdmx

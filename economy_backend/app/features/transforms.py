@@ -1,5 +1,14 @@
 from __future__ import annotations
 
+"""
+Feature transformation utilities for country-level panels.
+
+This module belongs to the feature layer and provides reusable pandas
+transformations (e.g., year-over-year growth) consumed by
+``build_country_year_features`` and metrics pipelines that derive momentum
+signals.
+"""
+
 import numpy as np
 import pandas as pd
 

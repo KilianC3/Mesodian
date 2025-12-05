@@ -1,14 +1,10 @@
+"""Unit tests for building country-year feature panels from synthetic data."""
+
 import datetime as dt
-import sys
-from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
 
 from app.config.country_universe import COUNTRY_UNIVERSE
 from app.db.models import Base, Country, CountryYearFeatures, Indicator, ShippingCountryMonth, TimeSeriesValue

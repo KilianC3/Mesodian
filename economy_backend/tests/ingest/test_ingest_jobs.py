@@ -1,3 +1,5 @@
+"""Tests covering ingestion clients, catalogue helpers, and DB.nomics loaders."""
+
 from typing import Dict
 
 from unittest.mock import MagicMock

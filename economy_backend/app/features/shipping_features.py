@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+"""
+Shipping-derived feature helpers for country-year panels.
+
+This feature module queries monthly AIS-derived shipping intensity and produces
+annual aggregates for use by ``build_country_year_features`` and downstream risk
+metrics that depend on logistics activity.
+"""
+
 from typing import Dict, Optional
 
 from sqlalchemy import func

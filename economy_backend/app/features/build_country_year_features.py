@@ -1,5 +1,14 @@
 from __future__ import annotations
 
+"""
+Country-year feature aggregation for the warehouse layer.
+
+This feature module consolidates macro indicators, shipping intensity, event
+stress proxies, and data-quality scores into ``country_year_features`` rows.
+It is invoked by offline batch jobs or CLI execution when building training
+panels for metrics and graph enrichment.
+"""
+
 import datetime as dt
 import os
 import sys
@@ -83,7 +92,13 @@ def _update_latest_date(current: Optional[dt.date], series: Optional[pd.Series])
 
 
 def build_country_year_features(session: Session, year: int) -> None:
-    """Aggregate yearly country features and store them in the warehouse."""
+    """
+    Aggregate yearly country features and persist them to the warehouse.
+
+    Args:
+        session: Open SQLAlchemy session bound to the warehouse database.
+        year: Target year for which to compute macro, shipping, and quality features.
+    """
 
     start_date = dt.date(year - 5, 1, 1)
     end_date = dt.date(year, 12, 31)

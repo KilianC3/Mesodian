@@ -1,3 +1,5 @@
+"""Tests for feature construction and supporting configuration utilities."""
+
 import logging
 import sys
 from pathlib import Path

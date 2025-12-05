@@ -1,3 +1,5 @@
+"""Tests for country, cycle, and ESG metric calculations."""
+
 import sys
 from datetime import date
 from pathlib import Path
