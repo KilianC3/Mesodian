@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+"""
+SQLAlchemy ORM models for raw ingestion, warehouse panels, and graph schemas.
+
+This module anchors the storage layer for the backend, covering raw provider
+payloads, normalized warehouse entities (countries, indicators, features),
+global cycle scores, and the graph tables used by web and edge metrics. It is
+imported by ingestion jobs, feature builders, metrics pipelines, and API
+routers whenever database objects are created or queried.
+"""
+
 import enum
 
 from sqlalchemy import (
@@ -28,6 +38,8 @@ Base = declarative_base()
 
 class RawBase(Base):
     __abstract__ = True
+
+    """Base class for raw provider payload tables in the ``raw`` schema."""
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     fetched_at = Column(DateTime(timezone=True), index=True)
@@ -140,6 +152,8 @@ class Country(Base):
     __tablename__ = "country"
     __table_args__ = {"schema": "warehouse", "sqlite_autoincrement": True}
 
+    """Reference country table shared across warehouse and graph layers."""
+
     id = Column(String(3), primary_key=True)
     name = Column(String, nullable=False)
     region = Column(String, nullable=False)
@@ -149,6 +163,8 @@ class Country(Base):
 class Indicator(Base):
     __tablename__ = "indicator"
     __table_args__ = {"schema": "warehouse"}
+
+    """Reference table mapping provider series to canonical indicator codes."""
 
     id = Column(Integer, primary_key=True)
     source = Column(String, nullable=False)
@@ -164,6 +180,8 @@ class Asset(Base):
     __tablename__ = "asset"
     __table_args__ = {"schema": "warehouse"}
 
+    """Registry of financial assets such as equities or indices."""
+
     id = Column(Integer, primary_key=True)
     symbol = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=False)
@@ -178,6 +196,8 @@ class TimeSeriesValue(Base):
         UniqueConstraint("indicator_id", "country_id", "date"),
         {"schema": "warehouse"},
     )
+
+    """Normalized macro/market time series values keyed by indicator and country."""
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     indicator_id = Column(Integer, ForeignKey("warehouse.indicator.id"), nullable=False)
@@ -196,6 +216,8 @@ class GlobalCycleIndex(Base):
         ),
         {"schema": "warehouse", "sqlite_autoincrement": True},
     )
+
+    """Principal-component cycle scores for global and regional aggregates."""
 
     id = Column(BigIntPKType, primary_key=True, autoincrement=True)
     date = Column(Date, nullable=False)
@@ -219,6 +241,8 @@ class AssetPrice(Base):
         {"schema": "warehouse"},
     )
 
+    """Daily OHLCV-style observations for tracked assets."""
+
     id = Column(BigIntPKType, primary_key=True, autoincrement=True)
     asset_id = Column(Integer, ForeignKey("warehouse.asset.id"), nullable=False)
     date = Column(Date, nullable=False)
@@ -237,6 +261,8 @@ class ShippingCountryMonth(Base):
         {"schema": "warehouse"},
     )
 
+    """Monthly AIS-derived shipping intensity metrics for each country."""
+
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     country_id = Column(String(3), ForeignKey("warehouse.country.id"), nullable=False)
     year = Column(Integer, nullable=False)
@@ -248,6 +274,8 @@ class ShippingCountryMonth(Base):
 class TradeFlow(Base):
     __tablename__ = "trade_flow"
     __table_args__ = {"schema": "warehouse"}
+
+    """Bilateral trade flows with HS section and flow direction metadata."""
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     reporter_country_id = Column(String(3), ForeignKey("warehouse.country.id"), nullable=False)
@@ -263,6 +291,8 @@ class CountryYearFeatures(Base):
     __table_args__ = (
         {"schema": "warehouse"},
     )
+
+    """Aggregated macro/climate/shipping features per country and year."""
 
     country_id = Column(String(3), ForeignKey("warehouse.country.id"), primary_key=True)
     year = Column(Integer, primary_key=True)
@@ -370,6 +400,8 @@ class Node(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
+    """Graph node with classification metadata for webs across domains."""
+
 
 class EdgeType(str, enum.Enum):
     TRADE_EXPOSURE = "trade_exposure"
@@ -469,6 +501,8 @@ class Edge(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
+    """Directed or bidirectional relationship between graph nodes."""
+
 
 class NodeMetric(Base):
     __tablename__ = "node_metric"
@@ -490,10 +524,14 @@ class NodeMetric(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
+    """Quantitative metric attached to a specific node for a given year."""
+
 
 class NodeMetricContrib(Base):
     __tablename__ = "node_metric_contrib"
     __table_args__ = {"schema": "graph"}
+
+    """Optional feature contribution breakdown for node metrics."""
 
     id = Column(BigInteger, primary_key=True)
     node_metric_id = Column(BigInteger, ForeignKey("graph.node_metric.id"), nullable=False)
@@ -518,6 +556,8 @@ class WebMetric(Base):
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
+
+    """Metric summarizing an entire web for a specific year (e.g., centrality)."""
 
 
 class EdgeMetric(Base):
@@ -546,10 +586,14 @@ class EdgeMetric(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
+    """Metric capturing the strength or stress of a particular edge."""
+
 
 class SovereignESGRaw(Base):
     __tablename__ = "sovereign_esg_raw"
     __table_args__ = {"schema": "warehouse"}
+
+    """Raw ESG pillar inputs staged before aggregation to sovereign scores."""
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     country_code = Column(String(3), nullable=False)

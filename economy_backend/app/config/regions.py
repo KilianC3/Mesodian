@@ -1,4 +1,10 @@
-"""Custom region groupings and country mappings."""
+"""
+Region groupings for country-level aggregations and reporting.
+
+This config module supports the feature and metrics layers by mapping ISO3
+country codes to custom regional labels used in cycle calculations and summary
+views. ``COUNTRY_REGION_MAP`` is imported by region-aware metrics and tests.
+"""
 
 from __future__ import annotations
 

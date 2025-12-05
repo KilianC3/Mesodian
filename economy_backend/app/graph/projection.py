@@ -1,5 +1,14 @@
 from __future__ import annotations
 
+"""
+Graph projection helpers that materialize nodes and edges from warehouse data.
+
+The projection layer reads normalized country metadata and trade flows to
+populate the ``graph`` schema with country nodes and flow edges tagged for web
+analytics. These functions are called by web metric orchestrators before
+centrality computation.
+"""
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -14,6 +23,7 @@ from app.graph.schema_helpers import (
 
 
 def project_country_nodes(session: Session) -> None:
+    """Insert country nodes into the graph schema if they do not already exist."""
     existing_nodes = {node.country_code: node for node in session.query(Node).filter(Node.node_type == NodeType.COUNTRY).all()}
     countries = session.query(Country).all()
 
@@ -34,6 +44,7 @@ def project_country_nodes(session: Session) -> None:
 
 
 def project_trade_edges(session: Session, year: int) -> None:
+    """Create trade flow edges for a given year between country nodes."""
     country_nodes = {
         node.country_code: node for node in session.query(Node).filter(Node.node_type == NodeType.COUNTRY).all()
     }

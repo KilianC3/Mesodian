@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+"""
+Data-quality scoring utilities for feature panels.
+
+Functions here compute coverage and freshness scores for ``country_year_features``
+and related panels. They are used by feature builders and metrics to flag
+countries with sparse or stale inputs.
+"""
+
 import math
 from datetime import date
 from typing import Dict, Optional

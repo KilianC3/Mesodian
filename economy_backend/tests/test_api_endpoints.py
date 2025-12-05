@@ -1,6 +1,6 @@
 import os
 
-os.environ.setdefault("POSTGRES_URL", "sqlite://")
+os.environ.setdefault("DATABASE_URL", "sqlite://")
 os.environ.setdefault("FRED_API_KEY", "dummy")
 os.environ.setdefault("EIA_API_KEY", "dummy")
 os.environ.setdefault("COMTRADE_API_KEY", "dummy")
