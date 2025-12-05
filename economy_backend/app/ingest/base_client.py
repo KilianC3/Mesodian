@@ -1,5 +1,4 @@
-"""
-Provider-agnostic HTTP and SDMX client utilities for ingestion.
+"""Provider-agnostic HTTP and SDMX client utilities for ingestion.
 
 This module underpins the ingestion layer by standardizing retry/backoff logic
 for REST providers (FRED, WDI, Comtrade, etc.) and by exposing a thin SDMX

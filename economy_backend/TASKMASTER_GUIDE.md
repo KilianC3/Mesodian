@@ -49,3 +49,4 @@ Data flows: external sources → `raw.*` staging → normalized `warehouse.*` se
 
 ## 5. Change log
 - 2025-02-02 – Agent – Added Taskmaster guide summarizing architecture, module responsibilities, coding rules, and workflow expectations for future backend changes.
+- 2025-02-14 – Agent – Corrected ingestion base_client module docstring syntax to restore valid imports and reconfirmed ENUM migrations rely on autocommit blocks.
