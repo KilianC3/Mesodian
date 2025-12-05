@@ -18,11 +18,13 @@ from app.db.models import Base  # noqa: F401
 
 def _build_engine() -> Engine:
     settings = get_settings()
-    if not settings.postgres_url:
-        raise RuntimeError("POSTGRES_URL must be configured for database access.")
+    try:
+        database_url = settings.resolved_database_url
+    except ValueError as exc:
+        raise RuntimeError("DATABASE_URL must be configured for database access.") from exc
 
     try:
-        engine = create_engine(settings.postgres_url, pool_pre_ping=True, future=True)
+        engine = create_engine(database_url, pool_pre_ping=True, future=True)
     except Exception as exc:  # pragma: no cover - safety
         raise RuntimeError(f"Failed to create engine: {exc}") from exc
 

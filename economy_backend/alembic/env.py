@@ -1,5 +1,6 @@
 from __future__ import with_statement
 
+import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -10,7 +11,6 @@ from sqlalchemy import engine_from_config, pool
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))
 
-from app.config import get_settings  # noqa: E402
 from app.db.models import Base  # noqa: E402
 
 # this is the Alembic Config object, which provides
@@ -22,8 +22,12 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.postgres_url)
+database_url = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+
+if not database_url:
+    raise RuntimeError("DATABASE_URL must be provided for Alembic migrations.")
+
+config.set_main_option("sqlalchemy.url", database_url)
 
 target_metadata = Base.metadata
 

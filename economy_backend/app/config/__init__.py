@@ -4,6 +4,7 @@ variables for the backend such as database URLs, API keys, and runtime flags
 so ingestion, API routes, and batch jobs share consistent defaults.
 """
 
+import os
 from functools import lru_cache
 from typing import Optional
 
@@ -15,7 +16,8 @@ class Settings(BaseSettings):
     env: str = Field("dev", env="ENV")
     debug: bool = Field(False, env="DEBUG")
 
-    postgres_url: str = Field(..., env="POSTGRES_URL")
+    database_url: Optional[str] = Field(None, env="DATABASE_URL")
+    postgres_url: Optional[str] = Field(None, env="POSTGRES_URL")
     redis_url: Optional[str] = Field(None, env="REDIS_URL")
 
     fred_api_key: str = Field(..., env="FRED_API_KEY")
@@ -34,6 +36,20 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+
+    @validator("database_url", pre=True, always=True)
+    def prefer_standard_database_url(cls, value: Optional[str]) -> Optional[str]:
+        if value:
+            return value
+        legacy = os.environ.get("POSTGRES_URL")
+        return legacy or value
+
+    @property
+    def resolved_database_url(self) -> str:
+        url = self.database_url or self.postgres_url
+        if not url:
+            raise ValueError("DATABASE_URL must be configured for database access.")
+        return url
 
 
 @lru_cache(maxsize=1)

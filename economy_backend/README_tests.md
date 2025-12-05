@@ -27,4 +27,4 @@ Until the infra updates land, activate your virtualenv and run:
 pytest
 ```
 
-Environment variables such as `POSTGRES_URL` and provider API keys are read by the settings layer; defaults in tests avoid contacting real services. This document will expand with Docker-compose and marker guidance once the test infrastructure is refactored.
+Environment variables such as `DATABASE_URL` and provider API keys are read by the settings layer; defaults in tests avoid contacting real services. This document will expand with Docker-compose and marker guidance once the test infrastructure is refactored.

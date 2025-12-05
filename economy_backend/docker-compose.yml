@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: economy
+      POSTGRES_PASSWORD: economy
+      POSTGRES_DB: economy_dev
+    volumes:
+      - economy_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql+psycopg2://economy:economy@postgres:5432/economy_dev
+      ENV: dev
+      DEBUG: "false"
+      FRED_API_KEY: demo
+      EIA_API_KEY: demo
+      COMTRADE_API_KEY: demo
+      AISSTREAM_API_KEY: demo
+    working_dir: /app
+    command: ["bash"]
+
+volumes:
+  economy_pgdata:

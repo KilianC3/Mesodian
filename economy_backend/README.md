@@ -36,6 +36,23 @@ Backend services for the economic webs and risk analytics platform. The codebase
 - **Migrations:** Apply Alembic migrations under `alembic/` using the configured `DATABASE_URL` to materialise warehouse and graph schemas before running ingestion or metrics jobs.【F:alembic/env.py†L1-L93】
 - **Tests:** Pytest exercises ingestion utilities, graph helpers, and metric computations. See [README_tests.md](README_tests.md) for layout and execution guidance.
 
+## Getting started with Docker and Postgres
+
+1. Build and start the database service:
+   ```bash
+   docker-compose up -d postgres
+   ```
+2. Apply migrations inside the backend container so Postgres has the warehouse and graph schemas:
+   ```bash
+   docker-compose run --rm backend alembic upgrade head
+   ```
+3. Override the backend command for ad-hoc tasks such as running tests with:
+   ```bash
+   docker-compose run --rm backend pytest
+   ```
+
+All services read `DATABASE_URL` from the environment. The same value must be supplied to docker-compose, Alembic (`alembic/env.py`), and the runtime configuration (`app/config/__init__.py`) to keep migrations, the ORM engine, and tests aligned.【F:docker-compose.yml†L1-L34】【F:app/config/__init__.py†L1-L64】【F:alembic/env.py†L1-L48】
+
 ## Operating the backend locally
 
 1. Create and activate a virtual environment:
