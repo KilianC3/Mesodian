@@ -7,7 +7,6 @@ API keys, and runtime flags. ``get_settings`` is imported by API modules,
 ingestion jobs, and database utilities to ensure consistent configuration.
 """
 
-import os
 from functools import lru_cache
 from typing import Optional
 
@@ -20,7 +19,9 @@ class Settings(BaseSettings):
     env: str = Field("dev", env="ENV")
     debug: bool = Field(False, env="DEBUG")
 
-    database_url: str = Field(..., env="DATABASE_URL")
+    database_url: Optional[str] = Field(
+        None, env=["DATABASE_URL", "POSTGRES_URL"]
+    )
     redis_url: Optional[str] = Field(None, env="REDIS_URL")
 
     fred_api_key: str = Field(..., env="FRED_API_KEY")
@@ -35,16 +36,14 @@ class Settings(BaseSettings):
             raise ValueError(f"ENV must be one of {allowed}")
         return value
 
-    @validator("database_url", pre=True)
+    @validator("database_url", pre=True, always=True)
     def validate_database_url(cls, value: Optional[str]) -> str:
         if value:
             return value
 
-        legacy = os.getenv("POSTGRES_URL")
-        if legacy:
-            return legacy
-
-        raise ValueError("DATABASE_URL must be configured for database access.")
+        raise ValueError(
+            "DATABASE_URL or POSTGRES_URL must be configured for database access."
+        )
 
     @property
     def postgres_url(self) -> str:
