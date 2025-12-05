@@ -1,9 +1,13 @@
+"""Ingestion clients and data fetching helpers."""
+
+
 from typing import Dict
 
 from unittest.mock import MagicMock
 
 import pytest
 
+pytestmark = pytest.mark.integration
 from app.ingest import jobs
 
 

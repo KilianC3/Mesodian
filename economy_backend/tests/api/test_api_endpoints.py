@@ -1,3 +1,9 @@
+"""API endpoint behavior and routing expectations."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
+
 import os
 
 os.environ.setdefault("DATABASE_URL", "sqlite://")

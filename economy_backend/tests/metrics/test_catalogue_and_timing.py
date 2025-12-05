@@ -1,11 +1,15 @@
+"""Computation of economic, ESG, and timing metrics."""
+
+
 import sys
 from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, text
+pytestmark = pytest.mark.integration
 from sqlalchemy.orm import Session, sessionmaker
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
+ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 

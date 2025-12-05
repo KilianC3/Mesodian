@@ -1,10 +1,16 @@
+"""Graph projection, metrics, and schema helpers."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
+
 import sys
 from pathlib import Path
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
+ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 

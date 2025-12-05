@@ -1,7 +1,11 @@
+"""Ingestion clients and data fetching helpers."""
+
+
 import datetime as dt
 
 import pytest
 from sqlalchemy import create_engine, text
+pytestmark = pytest.mark.integration
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models import Base, Country, Indicator, TimeSeriesValue

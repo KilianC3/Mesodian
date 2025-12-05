@@ -1,3 +1,9 @@
+"""Graph projection, metrics, and schema helpers."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
+
 from app.db.models import (
     Certainty,
     Direction,

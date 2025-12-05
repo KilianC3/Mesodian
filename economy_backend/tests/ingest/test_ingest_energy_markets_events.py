@@ -1,13 +1,17 @@
+"""Ingestion clients and data fetching helpers."""
+
+
 import datetime as dt
 
 import pandas as pd
 import pytest
 from pathlib import Path
+pytestmark = pytest.mark.integration
 import sys
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from app.db.models import (
     Asset,

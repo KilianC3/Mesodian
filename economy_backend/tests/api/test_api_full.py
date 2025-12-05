@@ -1,3 +1,6 @@
+"""API endpoint behavior and routing expectations."""
+
+
 import datetime as dt
 import os
 import sys
@@ -6,11 +9,12 @@ from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
+pytestmark = pytest.mark.integration
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import Session, sessionmaker
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
+ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
