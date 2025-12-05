@@ -1,25 +1,17 @@
-"""API endpoint behavior and routing expectations."""
+"""Integration coverage for FastAPI endpoints using a migrated database."""
 
 
 import datetime as dt
 import os
-import sys
-from pathlib import Path
-from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
 pytestmark = pytest.mark.integration
-from sqlalchemy import create_engine, text
-from sqlalchemy.pool import StaticPool
-from sqlalchemy.orm import Session, sessionmaker
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
-# Configure environment for Settings
-os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+# Configure environment for Settings defaults used by the API app
 os.environ.setdefault("FRED_API_KEY", "test")
 os.environ.setdefault("EIA_API_KEY", "test")
 os.environ.setdefault("COMTRADE_API_KEY", "test")
@@ -28,17 +20,15 @@ os.environ.setdefault("AISSTREAM_API_KEY", "test")
 from app.db.engine import get_db  # noqa: E402
 from app.db.models import (  # noqa: E402
     Asset,
-    AssetPrice,
-    Base,
     Country,
     CountryYearFeatures,
     Edge,
     EdgeType,
     Indicator,
-    Node,
-    NodeType,
-    NodeMetric,
     LayerId,
+    Node,
+    NodeMetric,
+    NodeType,
     TimeSeriesValue,
     TradeFlow,
 )
@@ -46,41 +36,21 @@ from app.main import app  # noqa: E402
 
 
 @pytest.fixture()
-def session() -> Generator[Session, None, None]:
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    with engine.connect() as conn:
-        conn.execute(text("ATTACH DATABASE ':memory:' AS raw"))
-        conn.execute(text("ATTACH DATABASE ':memory:' AS warehouse"))
-        conn.execute(text("ATTACH DATABASE ':memory:' AS graph"))
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-@pytest.fixture(autouse=True)
-def seed_data(session: Session) -> None:
+def seeded_session(db_session: Session) -> Session:
     countries = [
         Country(id="USA", name="United States", region="Americas", income_group="High income"),
         Country(id="DEU", name="Germany", region="Europe", income_group="High income"),
         Country(id="MEX", name="Mexico", region="Americas", income_group="Upper middle income"),
     ]
-    session.add_all(countries)
+    db_session.add_all(countries)
 
     indicators = [
         Indicator(id=1, source="WDI", source_code="NY.GDP.MKTP.KD", canonical_code="GDP_REAL", frequency="annual", unit="USD", category="Macro"),
         Indicator(id=2, source="YF", source_code="SPY", canonical_code="ASSET_SPY", frequency="daily", unit=None, category="Market"),
     ]
-    session.add_all(indicators)
+    db_session.add_all(indicators)
 
-    session.add_all(
+    db_session.add_all(
         [
             TimeSeriesValue(indicator_id=1, country_id="USA", date=dt.date(2022, 12, 31), value=20000),
             TimeSeriesValue(indicator_id=1, country_id="USA", date=dt.date(2023, 12, 31), value=20500),
@@ -89,8 +59,8 @@ def seed_data(session: Session) -> None:
     )
 
     asset = Asset(id=1, symbol="SPY", name="SPDR S&P 500 ETF Trust", asset_type="equity", country_id=None, region="US")
-    session.add(asset)
-    session.execute(
+    db_session.add(asset)
+    db_session.execute(
         text(
             """
             INSERT INTO warehouse.asset_price
@@ -139,16 +109,16 @@ def seed_data(session: Session) -> None:
         data_coverage_score=92.0,
         data_freshness_score=88.0,
     )
-    session.add(features)
+    db_session.add(features)
 
     nodes = [
         Node(id=1, name="United States", node_type=NodeType.COUNTRY, ref_type="country", ref_id="USA", label="United States", country_code="USA"),
         Node(id=2, name="Germany", node_type=NodeType.COUNTRY, ref_type="country", ref_id="DEU", label="Germany", country_code="DEU"),
         Node(id=3, name="Mexico", node_type=NodeType.COUNTRY, ref_type="country", ref_id="MEX", label="Mexico", country_code="MEX"),
     ]
-    session.add_all(nodes)
+    db_session.add_all(nodes)
 
-    session.execute(
+    db_session.execute(
         text(
             """
             INSERT INTO graph.node_metric (id, node_id, metric_code, as_of_year, value)
@@ -161,7 +131,7 @@ def seed_data(session: Session) -> None:
         {"id1": 1, "id2": 2, "id3": 3, "node1": 1, "node2": 2},
     )
 
-    session.add_all(
+    db_session.add_all(
         [
             Edge(
                 id=1,
@@ -186,23 +156,21 @@ def seed_data(session: Session) -> None:
         ]
     )
 
-    session.add_all(
+    db_session.add_all(
         [
             TradeFlow(reporter_country_id="USA", partner_country_id="DEU", year=2023, hs_section=None, flow_type="import", value_usd=350000000000),
             TradeFlow(reporter_country_id="USA", partner_country_id="MEX", year=2023, hs_section=None, flow_type="import", value_usd=210000000000),
         ]
     )
 
-    session.commit()
+    db_session.commit()
+    return db_session
 
 
 @pytest.fixture()
-def client(session: Session) -> TestClient:
+def client(seeded_session: Session) -> TestClient:
     def override_get_db():
-        try:
-            yield session
-        finally:
-            pass
+        yield seeded_session
 
     app.dependency_overrides[get_db] = override_get_db
     return TestClient(app)
