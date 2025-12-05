@@ -37,3 +37,4 @@
 
 ## 5. Change log
 - 2025-03-17 – Agent – Added TASKMASTER_GUIDE.md capturing architecture snapshot, module inventory, coding rules, workflow, and change log for future agents.
+- 2025-03-18 – Agent – Reviewed schema alignment and ensured the trade exposure enum migration executes in autocommit mode to satisfy PostgreSQL requirements; reinforced guidance on keeping migrations consistent with ORM models.
