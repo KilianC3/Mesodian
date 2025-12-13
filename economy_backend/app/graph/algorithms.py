@@ -1,3 +1,9 @@
+"""
+Graph analytics helpers that compute centrality and propagation metrics on the
+stored webs. Functions in this module read graph tables via SQLAlchemy sessions
+and persist results into metric tables for downstream reporting.
+"""
+
 from __future__ import annotations
 
 """

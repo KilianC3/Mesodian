@@ -1,10 +1,7 @@
 """
-Database engine and session utilities for SQLAlchemy.
-
-This infrastructure module builds the SQLAlchemy engine from configured
-environment variables, exposes session helpers for dependency injection in
-FastAPI and scripts, and validates connectivity up front. It is used throughout
-ingestion, metrics, and API layers wherever a database session is required.
+Database engine and session helpers for the backend infrastructure layer.
+The module centralizes SQLAlchemy engine creation from environment settings
+and exposes context-managed sessions for API routes, metrics jobs, and tests.
 """
 
 from contextlib import contextmanager
@@ -20,13 +17,14 @@ from app.db.models import Base  # noqa: F401
 
 
 def _build_engine() -> Engine:
-    """Construct an engine from environment settings with basic validation."""
     settings = get_settings()
-    if not settings.database_url:
-        raise RuntimeError("DATABASE_URL must be configured for database access.")
+    try:
+        database_url = settings.resolved_database_url
+    except ValueError as exc:
+        raise RuntimeError("DATABASE_URL must be configured for database access.") from exc
 
     try:
-        engine = create_engine(settings.database_url, pool_pre_ping=True, future=True)
+        engine = create_engine(database_url, pool_pre_ping=True, future=True)
     except Exception as exc:  # pragma: no cover - safety
         raise RuntimeError(f"Failed to create engine: {exc}") from exc
 
@@ -39,7 +37,6 @@ metadata = Base.metadata
 
 
 def get_db() -> Generator[Session, None, None]:
-    """Yield a SQLAlchemy session for FastAPI dependency injection."""
     db = SessionLocal()
     try:
         # Validate connectivity early to surface misconfiguration.
@@ -54,7 +51,6 @@ def get_db() -> Generator[Session, None, None]:
 
 @contextmanager
 def db_session() -> Generator[Session, None, None]:
-    """Context manager that opens and closes a SQLAlchemy session."""
     session = SessionLocal()
     try:
         yield session

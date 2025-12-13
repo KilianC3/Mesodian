@@ -1,3 +1,9 @@
+"""
+Builder for `CountryYearFeatures`, joining macro indicators, trade balances,
+shipping proxies, and climate/quality signals into a reproducible panel per
+country-year. Used by metrics and cycle extraction routines.
+"""
+
 from __future__ import annotations
 
 """

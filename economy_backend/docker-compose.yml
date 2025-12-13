@@ -7,29 +7,27 @@ services:
       POSTGRES_USER: economy
       POSTGRES_PASSWORD: economy
       POSTGRES_DB: economy_dev
-    ports:
-      - "5433:5432"
     volumes:
       - economy_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      DATABASE_URL: postgresql+psycopg2://economy:economy@postgres:5432/economy_dev
-      APP_NAME: Economy Analytics API
-      ENV: dev
-      DEBUG: "false"
-      FRED_API_KEY: ${FRED_API_KEY:-changeme}
-      EIA_API_KEY: ${EIA_API_KEY:-changeme}
-      COMTRADE_API_KEY: ${COMTRADE_API_KEY:-changeme}
-      AISSTREAM_API_KEY: ${AISSTREAM_API_KEY:-changeme}
-    working_dir: /app
     depends_on:
       - postgres
-    command: bash
-    tty: true
+    environment:
+      DATABASE_URL: postgresql+psycopg2://economy:economy@postgres:5432/economy_dev
+      ENV: dev
+      DEBUG: "false"
+      FRED_API_KEY: 963c7696f1dc40da681e1d7389fa559f
+      EIA_API_KEY: 1YYacIt1lO7maJxztI5eZF1gIKvSFZz4n7hP900u
+      COMTRADE_API_KEY: 750d8d8f9da145e49048d9f077f56441
+      AISSTREAM_API_KEY: 3cef00d51f92006f4256e4b74718ea9b1b0d9594
+    working_dir: /app
+    command: ["bash"]
 
 volumes:
   economy_pgdata:

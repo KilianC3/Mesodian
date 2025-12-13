@@ -1,4 +1,5 @@
-"""Unit tests for the ingestion HTTP client wrapper with mocked responses."""
+"""Ingestion clients and data fetching helpers."""
+
 
 import asyncio
 import random
@@ -7,6 +8,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 import pytest
 
+pytestmark = pytest.mark.unit
 from app.ingest.base_client import AsyncHttpClient, HttpClientError
 
 

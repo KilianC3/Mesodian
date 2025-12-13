@@ -1,53 +1,59 @@
-"""Shared pytest fixtures and markers for database-backed and unit tests."""
+"""Shared pytest fixtures for database-backed integration tests."""
+
 import os
+import sys
+from pathlib import Path
 from typing import Generator
 
 import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
-DEFAULT_DB_URL = "postgresql+psycopg2://economy:economy@postgres:5432/economy_dev"
+
+# Ensure repository root is importable for `app` package lookups when tests
+# are executed from different working directories.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 
 @pytest.fixture(scope="session")
 def database_url() -> str:
-    """Provide the database URL for tests, defaulting to the compose Postgres service."""
-    return os.environ.get("DATABASE_URL", DEFAULT_DB_URL)
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        pytest.skip("DATABASE_URL is required for integration tests")
+    return url
 
 
 @pytest.fixture(scope="session")
-def migrated_engine(database_url: str):
-    """Apply Alembic migrations once and yield a ready SQLAlchemy engine."""
-    config = Config("alembic.ini")
+def alembic_config(database_url: str) -> Config:
+    config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
     config.set_main_option("sqlalchemy.url", database_url)
-    command.upgrade(config, "head")
-    engine = create_engine(database_url, future=True)
+    return config
+
+
+@pytest.fixture(scope="session")
+def migrated_engine(alembic_config: Config) -> Generator[Engine, None, None]:
+    command.upgrade(alembic_config, "head")
+    engine = create_engine(alembic_config.get_main_option("sqlalchemy.url"), future=True)
     try:
         yield engine
     finally:
         engine.dispose()
 
 
-@pytest.fixture()
-def db_session(migrated_engine) -> Generator[Session, None, None]:
-    """Create a transactional session against the migrated database for integration tests."""
+@pytest.fixture(scope="function")
+def db_session(migrated_engine: Engine) -> Generator[Session, None, None]:
     connection = migrated_engine.connect()
     transaction = connection.begin()
-    SessionLocal = sessionmaker(bind=connection, autoflush=False, autocommit=False, future=True)
-    session = SessionLocal()
+    session = Session(bind=connection, autoflush=False, autocommit=False, future=True)
+    session.begin_nested()
     try:
         yield session
     finally:
         session.close()
         transaction.rollback()
         connection.close()
-
-
-def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Default all tests to the ``unit`` marker unless explicitly marked otherwise."""
-    for item in items:
-        if "integration" in item.keywords or "unit" in item.keywords:
-            continue
-        item.add_marker(pytest.mark.unit)

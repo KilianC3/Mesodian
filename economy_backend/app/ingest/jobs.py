@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 
 from app.ingest import (
     adb_client,
-    afdb_client,
     aisstream_client,
     bis_client,
     comtrade_client,
@@ -19,6 +18,7 @@ from app.ingest import (
     ilostat_client,
     imf_client,
     oecd_client,
+    oksurf_client,
     ons_client,
     openalex_client,
     patentsview_client,
@@ -26,6 +26,7 @@ from app.ingest import (
     stooq_client,
     unctad_client,
     wdi_client,
+    wto_client,
     yfinance_client,
 )
 
@@ -39,12 +40,12 @@ PROVIDERS = [
     ("ONS", ons_client),
     ("OECD", oecd_client),
     ("ADB", adb_client),
-    ("AFDB", afdb_client),
     ("COMTRADE", comtrade_client),
     ("BIS", bis_client),
     ("FAOSTAT", faostat_client),
     ("ILOSTAT", ilostat_client),
     ("UNCTAD", unctad_client),
+    ("WTO", wto_client),
     ("OPENALEX", openalex_client),
     ("PATENTSVIEW", patentsview_client),
     ("EIA", eia_client),
@@ -54,6 +55,7 @@ PROVIDERS = [
     ("STOOQ", stooq_client),
     ("AISSTREAM", aisstream_client),
     ("GDELT", gdelt_client),
+    ("OKSURF", oksurf_client),
     ("RSS", rss_client),
 ]
 

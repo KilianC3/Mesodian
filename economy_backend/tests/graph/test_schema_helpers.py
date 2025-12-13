@@ -1,4 +1,8 @@
-"""Tests for graph schema helpers, projections, and centrality metrics."""
+"""Graph projection, metrics, and schema helpers."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 
 from app.db.models import (
     Certainty,

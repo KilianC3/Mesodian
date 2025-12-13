@@ -1,3 +1,9 @@
+"""
+Utility functions shared by cycle extraction modules. Provides helpers for
+standardising series, filtering indicators by timing class, and mapping scores
+into discrete regimes used by global and regional cycle pipelines.
+"""
+
 from __future__ import annotations
 
 from typing import Iterable

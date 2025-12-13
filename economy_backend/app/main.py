@@ -1,10 +1,8 @@
 """
-FastAPI application entrypoint for the economy analytics backend.
-
-This module wires together the API routers for reference data, time series,
-country-year features, metrics, graph webs, and dashboard views. It belongs to
-the API/read layer and is launched by ``uvicorn app.main:app`` in development or
-production deployments.
+Entry point for the FastAPI application that exposes read-only economic
+analytics APIs. Routers cover reference data, time series, country features,
+metrics, webs, and dashboard summaries. This module wires configuration and
+middleware; uvicorn loads `app` when running the service.
 """
 
 from fastapi import FastAPI

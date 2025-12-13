@@ -1,8 +1,7 @@
 """
-Static configuration listing the supported country universe.
-
-Used by feature builders and metrics pipelines to iterate deterministically
-over the set of countries included in the analytics warehouse.
+Canonical list of supported country ISO3 codes used across ingestion, feature
+engineering, and metrics pipelines. This universe guides fixtures and
+validations without duplicating lists in downstream modules.
 """
 
 from typing import List

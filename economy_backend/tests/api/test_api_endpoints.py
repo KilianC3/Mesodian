@@ -1,4 +1,8 @@
-"""Unit tests for FastAPI health and root endpoints using dummy settings."""
+"""API endpoint behavior and routing expectations."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 
 import os
 

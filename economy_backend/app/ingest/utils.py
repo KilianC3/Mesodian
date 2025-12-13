@@ -5,9 +5,20 @@ import logging
 from typing import Any, Dict, Iterable, List, Sequence, Type
 
 from sqlalchemy import and_, func, insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from app.db.models import Indicator, RawBase, TimeSeriesValue, TradeFlow
+from app.db.models import (
+    AnalystRating,
+    EquityFinancials,
+    EquityFundamentals,
+    Indicator,
+    InsiderTrade,
+    RawBase,
+    StockNews,
+    TimeSeriesValue,
+    TradeFlow,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +39,7 @@ def store_raw_payload(
     params: Dict[str, Any],
     payload: Any,
 ) -> None:
-    record = model(fetched_at=dt.datetime.utcnow(), params=params, payload=payload)
+    record = model(fetched_at=dt.datetime.now(dt.timezone.utc), params=params, payload=payload)
     session.add(record)
 
 
@@ -39,7 +50,7 @@ def bulk_upsert_timeseries(session: Session, rows: Sequence[Dict[str, Any]]) -> 
     table = TimeSeriesValue.__table__
     dialect_name = session.bind.dialect.name if session.bind else ""
     if dialect_name == "postgresql":  # pragma: no cover - environment specific
-        stmt = insert(table).values(rows)
+        stmt = pg_insert(table).values(rows)
         stmt = stmt.on_conflict_do_update(
             index_elements=[table.c.indicator_id, table.c.country_id, table.c.date],
             set_={
@@ -111,25 +122,10 @@ def bulk_upsert_tradeflows(session: Session, rows: Sequence[Dict[str, Any]]) -> 
     if not rows:
         return
 
-    table = TradeFlow.__table__
-    dialect_name = session.bind.dialect.name if session.bind else ""
-    if dialect_name == "postgresql":  # pragma: no cover - environment specific
-        stmt = insert(table).values(rows)
-        stmt = stmt.on_conflict_do_update(
-            index_elements=[
-                table.c.reporter_country_id,
-                table.c.partner_country_id,
-                table.c.year,
-                table.c.hs_section,
-                table.c.flow_type,
-            ],
-            set_={
-                "value_usd": stmt.excluded.value_usd,
-            },
-        )
-        session.execute(stmt)
-        return
-
+    # TODO: Add unique constraint to TradeFlow table to enable PostgreSQL upsert optimization
+    # For now, use individual query-and-upsert approach for all dialects
+    # NOTE: Using .first() instead of .one_or_none() to handle existing duplicates gracefully
+    
     for row in rows:
         existing = (
             session.query(TradeFlow)
@@ -142,12 +138,197 @@ def bulk_upsert_tradeflows(session: Session, rows: Sequence[Dict[str, Any]]) -> 
                     TradeFlow.flow_type == row.get("flow_type"),
                 )
             )
-            .one_or_none()
+            .first()  # Use .first() to get first match even if duplicates exist
         )
         if existing:
             existing.value_usd = row.get("value_usd", existing.value_usd)
         else:
             session.add(TradeFlow(**row))
+
+
+def bulk_upsert_equity_fundamentals(session: Session, rows: Sequence[Dict[str, Any]]) -> None:
+    """Upsert equity fundamentals rows keyed by ticker and date."""
+    if not rows:
+        return
+
+    table = EquityFundamentals.__table__
+    dialect_name = session.bind.dialect.name if session.bind else ""
+    if dialect_name == "postgresql":
+        stmt = pg_insert(table).values(rows)
+        # Only update columns that are present in the data (exclude id, ticker, date)
+        update_cols = {}
+        for col in table.c:
+            if col.name not in ("id", "ticker", "date"):
+                update_cols[col.name] = stmt.excluded[col.name]
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[table.c.ticker, table.c.date],
+            set_=update_cols,
+        )
+        session.execute(stmt)
+        return
+
+    for row in rows:
+        existing = (
+            session.query(EquityFundamentals)
+            .filter(
+                and_(
+                    EquityFundamentals.ticker == row["ticker"],
+                    EquityFundamentals.date == row["date"],
+                )
+            )
+            .one_or_none()
+        )
+        if existing:
+            for key, value in row.items():
+                if key not in ("id", "ticker", "date"):
+                    setattr(existing, key, value)
+        else:
+            session.add(EquityFundamentals(**row))
+
+
+def bulk_upsert_stock_news(session: Session, rows: Sequence[Dict[str, Any]]) -> None:
+    """Upsert stock news rows keyed by ticker, timestamp, and headline."""
+    if not rows:
+        return
+
+    table = StockNews.__table__
+    dialect_name = session.bind.dialect.name if session.bind else ""
+    if dialect_name == "postgresql":
+        stmt = pg_insert(table).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[table.c.ticker, table.c.timestamp, table.c.headline],
+            set_={col.name: stmt.excluded[col.name] for col in table.c if col.name not in ("id", "ticker", "timestamp", "headline")},
+        )
+        session.execute(stmt)
+        return
+
+    for row in rows:
+        existing = (
+            session.query(StockNews)
+            .filter(
+                and_(
+                    StockNews.ticker == row["ticker"],
+                    StockNews.timestamp == row["timestamp"],
+                    StockNews.headline == row["headline"],
+                )
+            )
+            .one_or_none()
+        )
+        if existing:
+            for key, value in row.items():
+                if key not in ("id", "ticker", "timestamp", "headline"):
+                    setattr(existing, key, value)
+        else:
+            session.add(StockNews(**row))
+
+
+def bulk_upsert_analyst_ratings(session: Session, rows: Sequence[Dict[str, Any]]) -> None:
+    """Upsert analyst rating rows keyed by ticker, date, firm, and action."""
+    if not rows:
+        return
+
+    table = AnalystRating.__table__
+    dialect_name = session.bind.dialect.name if session.bind else ""
+    if dialect_name == "postgresql":
+        stmt = pg_insert(table).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[table.c.ticker, table.c.date, table.c.firm, table.c.action],
+            set_={col.name: stmt.excluded[col.name] for col in table.c if col.name not in ("id", "ticker", "date", "firm", "action")},
+        )
+        session.execute(stmt)
+        return
+
+    for row in rows:
+        existing = (
+            session.query(AnalystRating)
+            .filter(
+                and_(
+                    AnalystRating.ticker == row["ticker"],
+                    AnalystRating.date == row["date"],
+                    AnalystRating.firm == row["firm"],
+                    AnalystRating.action == row["action"],
+                )
+            )
+            .one_or_none()
+        )
+        if existing:
+            for key, value in row.items():
+                if key not in ("id", "ticker", "date", "firm", "action"):
+                    setattr(existing, key, value)
+        else:
+            session.add(AnalystRating(**row))
+
+
+def bulk_upsert_insider_trades(session: Session, rows: Sequence[Dict[str, Any]]) -> None:
+    """Upsert insider trade rows keyed by ticker, insider_name, date, and transaction_type."""
+    if not rows:
+        return
+
+    table = InsiderTrade.__table__
+    dialect_name = session.bind.dialect.name if session.bind else ""
+    if dialect_name == "postgresql":
+        stmt = pg_insert(table).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[table.c.ticker, table.c.insider_name, table.c.date, table.c.transaction_type],
+            set_={col.name: stmt.excluded[col.name] for col in table.c if col.name not in ("id", "ticker", "insider_name", "date", "transaction_type")},
+        )
+        session.execute(stmt)
+        return
+
+    for row in rows:
+        existing = (
+            session.query(InsiderTrade)
+            .filter(
+                and_(
+                    InsiderTrade.ticker == row["ticker"],
+                    InsiderTrade.insider_name == row["insider_name"],
+                    InsiderTrade.date == row["date"],
+                    InsiderTrade.transaction_type == row["transaction_type"],
+                )
+            )
+            .one_or_none()
+        )
+        if existing:
+            for key, value in row.items():
+                if key not in ("id", "ticker", "insider_name", "date", "transaction_type"):
+                    setattr(existing, key, value)
+        else:
+            session.add(InsiderTrade(**row))
+
+
+def bulk_upsert_equity_financials(session: Session, rows: Sequence[Dict[str, Any]]) -> None:
+    """Upsert equity financials rows keyed by ticker, statement_type, year, and line_item."""
+    if not rows:
+        return
+
+    table = EquityFinancials.__table__
+    dialect_name = session.bind.dialect.name if session.bind else ""
+    if dialect_name == "postgresql":
+        stmt = pg_insert(table).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[table.c.ticker, table.c.statement_type, table.c.year, table.c.line_item],
+            set_={"value": stmt.excluded.value},
+        )
+        session.execute(stmt)
+        return
+
+    for row in rows:
+        existing = (
+            session.query(EquityFinancials)
+            .filter(
+                and_(
+                    EquityFinancials.ticker == row["ticker"],
+                    EquityFinancials.statement_type == row["statement_type"],
+                    EquityFinancials.year == row["year"],
+                    EquityFinancials.line_item == row["line_item"],
+                )
+            )
+            .one_or_none()
+        )
+        if existing:
+            existing.value = row.get("value", existing.value)
+        else:
+            session.add(EquityFinancials(**row))
 
 
 def parse_timeseries_rows(
@@ -194,7 +375,7 @@ def parse_timeseries_rows(
                 "date": date,
                 "value": numeric_value,
                 "source": source,
-                "ingested_at": dt.datetime.utcnow(),
+                "ingested_at": dt.datetime.now(dt.timezone.utc),
             }
         )
     return rows
@@ -208,5 +389,39 @@ def ensure_date(value: Any) -> dt.date:
     text = str(value)
     if text.isdigit() and len(text) == 4:
         return dt.date(int(text), 12, 31)
+    # Handle YYYY-Qn format (IMF quarterly data: 2018-Q1)
+    if len(text) == 7 and text[4] == '-' and text[5] == 'Q' and text[:4].isdigit() and text[6].isdigit():
+        year = int(text[:4])
+        quarter = int(text[6])
+        month = (quarter - 1) * 3 + 1  # Q1->1, Q2->4, Q3->7, Q4->10
+        return dt.date(year, month, 1)
+    # Handle YYYY-Mnn format (IMF monthly data: 2018-M01)
+    if len(text) == 8 and text[4] == '-' and text[5] == 'M' and text[:4].isdigit() and text[6:].isdigit():
+        year = int(text[:4])
+        month = int(text[6:])
+        return dt.date(year, month, 1)
+    # Handle YYYY-MM format (monthly data)
+    if len(text) == 7 and text[4] == '-' and text[:4].isdigit() and text[5:].isdigit():
+        year = int(text[:4])
+        month = int(text[5:])
+        return dt.date(year, month, 1)
+    # Handle ISO datetime strings (with or without timezone)
+    if "T" in text:
+        # Strip timezone designators but keep date component intact
+        cleaned = text
+        if "+" in cleaned:
+            cleaned = cleaned.split("+")[0]
+        if "Z" in cleaned:
+            cleaned = cleaned.replace("Z", "")
+        try:
+            return dt.datetime.fromisoformat(cleaned).date()
+        except ValueError:
+            # Fall back to parsing only the date portion before 'T'
+            try:
+                return dt.date.fromisoformat(cleaned.split("T")[0])
+            except ValueError:
+                pass
     return dt.date.fromisoformat(text)
+
+
 

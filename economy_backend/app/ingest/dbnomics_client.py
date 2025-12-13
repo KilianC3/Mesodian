@@ -10,7 +10,7 @@ import time
 import httpx
 import pandas as pd
 
-DEFAULT_BASE_URL = "https://api.worldbank.org/v2/"  # placeholder overridden by config
+DEFAULT_BASE_URL = "https://api.db.nomics.world/v22"  # DB.nomics API v22
 
 
 @dataclass

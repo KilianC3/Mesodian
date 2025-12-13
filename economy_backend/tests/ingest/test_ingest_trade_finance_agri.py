@@ -1,10 +1,12 @@
-"""Tests covering ingestion clients, catalogue helpers, and DB.nomics loaders."""
+"""Ingestion clients and data fetching helpers."""
+
 
 import datetime as dt
 
 import pandas as pd
 import pytest
 from sqlalchemy import create_engine, text
+pytestmark = pytest.mark.integration
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models import (
@@ -103,21 +105,21 @@ def test_comtrade_ingest(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_timeseries_ingestion(monkeypatch: pytest.MonkeyPatch) -> None:
     session = setup_session()
 
-    def fake_bis_fetch(base_url: str, dataset_code: str, params=None):
+    def fake_bis_fetch(base_url: str, dataset_code: str, params=None, **kwargs):
         return pd.DataFrame(
             [
                 {"LOCATION": "USA", "time": dt.date(2020, 12, 31), "value": 10.0},
             ]
         )
 
-    def fake_faostat(domain: str, params):
+    def fake_faostat(domain: str, params, **kwargs):
         return {
             "data": [
                 {"Area Code (M49)": "USA", "Value": 50, "Year": 2021},
             ]
         }
 
-    def fake_ilostat(base_url: str, dataset_code: str, params=None):
+    def fake_ilostat(base_url: str, dataset_code: str, params=None, **kwargs):
         return pd.DataFrame(
             [
                 {"LOCATION": "USA", "time": "2022", "value": 6.5},

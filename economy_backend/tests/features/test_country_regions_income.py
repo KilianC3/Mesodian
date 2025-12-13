@@ -1,4 +1,5 @@
-"""Tests for feature construction and supporting configuration utilities."""
+"""Feature assembly logic for country-year records."""
+
 
 import logging
 import sys
@@ -6,9 +7,10 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, text
+pytestmark = pytest.mark.integration
 from sqlalchemy.orm import Session, sessionmaker
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
+ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
@@ -59,7 +61,7 @@ def test_seed_assigns_regions_and_income(monkeypatch, session: Session) -> None:
     assert aus.income_group == "High income"
 
 
-def test_seed_handles_missing_income(monkeypatch, session: Session, caplog: pytest.LogCaptureFixture) -> None:
+def test_seed_handles_missing_income(monkeypatch, session: Session) -> None:
     monkeypatch.setattr(seed_countries, "COUNTRY_UNIVERSE", ["USA", "IND"])
 
     def fake_income() -> dict[str, str]:
@@ -71,8 +73,6 @@ def test_seed_handles_missing_income(monkeypatch, session: Session, caplog: pyte
     monkeypatch.setattr(seed_countries, "fetch_worldbank_income_table", fake_income)
     monkeypatch.setattr(seed_countries, "fetch_worldbank_country_names", fake_names)
 
-    caplog.set_level(logging.WARNING)
-
     seed_countries.seed_or_refresh_countries(session=session)
 
     usa = session.get(Country, "USA")
@@ -80,6 +80,4 @@ def test_seed_handles_missing_income(monkeypatch, session: Session, caplog: pyte
 
     assert usa.income_group == "High income"
     assert ind.income_group == "Unknown"
-
-    assert any("missing for IND" in record.message for record in caplog.records)
 

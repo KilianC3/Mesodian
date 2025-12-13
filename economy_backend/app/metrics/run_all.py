@@ -1,3 +1,9 @@
+"""
+Command-style orchestrator that runs the full suite of country metrics for a
+given year. Functions here coordinate individual metric modules and are invoked
+by CLI entrypoints or batch jobs.
+"""
+
 import argparse
 
 from sqlalchemy.orm import Session

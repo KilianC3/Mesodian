@@ -1,12 +1,10 @@
 """
-Configuration management for the backend runtime.
-
-This module belongs to the infrastructure/config layer and exposes a
-``Settings`` object backed by environment variables for database connections,
-API keys, and runtime flags. ``get_settings`` is imported by API modules,
-ingestion jobs, and database utilities to ensure consistent configuration.
+Configuration helpers built on Pydantic settings. Centralizes environment
+variables for the backend such as database URLs, API keys, and runtime flags
+so ingestion, API routes, and batch jobs share consistent defaults.
 """
 
+import os
 from functools import lru_cache
 from typing import Optional
 
@@ -14,14 +12,12 @@ from pydantic import BaseSettings, Field, validator
 
 
 class Settings(BaseSettings):
-    """Pydantic model capturing environment-driven configuration values."""
     app_name: str = Field("Economy Analytics API", env="APP_NAME")
     env: str = Field("dev", env="ENV")
     debug: bool = Field(False, env="DEBUG")
 
-    database_url: Optional[str] = Field(
-        None, env=["DATABASE_URL", "POSTGRES_URL"]
-    )
+    database_url: Optional[str] = Field(None, env="DATABASE_URL")
+    postgres_url: Optional[str] = Field(None, env="POSTGRES_URL")
     redis_url: Optional[str] = Field(None, env="REDIS_URL")
 
     fred_api_key: str = Field(..., env="FRED_API_KEY")
@@ -36,25 +32,24 @@ class Settings(BaseSettings):
             raise ValueError(f"ENV must be one of {allowed}")
         return value
 
-    @validator("database_url", pre=True, always=True)
-    def validate_database_url(cls, value: Optional[str]) -> str:
-        if value:
-            return value
-
-        raise ValueError(
-            "DATABASE_URL or POSTGRES_URL must be configured for database access."
-        )
-
-    @property
-    def postgres_url(self) -> str:
-        """Backward-compatible alias for the primary database URL."""
-
-        return self.database_url
-
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+
+    @validator("database_url", pre=True, always=True)
+    def prefer_standard_database_url(cls, value: Optional[str]) -> Optional[str]:
+        if value:
+            return value
+        legacy = os.environ.get("POSTGRES_URL")
+        return legacy or value
+
+    @property
+    def resolved_database_url(self) -> str:
+        url = self.database_url or self.postgres_url
+        if not url:
+            raise ValueError("DATABASE_URL must be configured for database access.")
+        return url
 
 
 @lru_cache(maxsize=1)

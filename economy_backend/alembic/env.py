@@ -6,7 +6,7 @@ from logging.config import fileConfig
 from pathlib import Path
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))
@@ -22,9 +22,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-database_url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
+database_url = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+
 if not database_url:
-    raise RuntimeError("DATABASE_URL must be set for Alembic migrations.")
+    raise RuntimeError("DATABASE_URL must be provided for Alembic migrations.")
 
 config.set_main_option("sqlalchemy.url", database_url)
 
@@ -45,8 +46,11 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.echo"] = False
+    
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section) or {},
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
         future=True,

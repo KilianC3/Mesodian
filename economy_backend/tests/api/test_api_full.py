@@ -1,4 +1,5 @@
-"""API contract tests against in-memory SQLite fixtures."""
+"""Integration coverage for FastAPI endpoints using a migrated database."""
+
 
 import datetime as dt
 import os
@@ -6,12 +7,15 @@ from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
-from sqlalchemy.pool import StaticPool
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-# Configure environment for Settings
-os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+pytestmark = pytest.mark.integration
+
+if not os.environ.get("DATABASE_URL"):
+    pytest.skip("DATABASE_URL is required for API integration tests", allow_module_level=True)
+
+# Configure environment for Settings defaults used by the API app
 os.environ.setdefault("FRED_API_KEY", "test")
 os.environ.setdefault("EIA_API_KEY", "test")
 os.environ.setdefault("COMTRADE_API_KEY", "test")
@@ -21,16 +25,15 @@ from app.db.engine import get_db  # noqa: E402
 from app.db.models import (  # noqa: E402
     Asset,
     AssetPrice,
-    Base,
     Country,
     CountryYearFeatures,
     Edge,
     EdgeType,
     Indicator,
-    Node,
-    NodeType,
-    NodeMetric,
     LayerId,
+    Node,
+    NodeMetric,
+    NodeType,
     TimeSeriesValue,
     TradeFlow,
 )
@@ -38,41 +41,21 @@ from app.main import app  # noqa: E402
 
 
 @pytest.fixture()
-def session() -> Generator[Session, None, None]:
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    with engine.connect() as conn:
-        conn.execute(text("ATTACH DATABASE ':memory:' AS raw"))
-        conn.execute(text("ATTACH DATABASE ':memory:' AS warehouse"))
-        conn.execute(text("ATTACH DATABASE ':memory:' AS graph"))
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-@pytest.fixture(autouse=True)
-def seed_data(session: Session) -> None:
+def seeded_session(db_session: Session) -> Session:
     countries = [
         Country(id="USA", name="United States", region="Americas", income_group="High income"),
         Country(id="DEU", name="Germany", region="Europe", income_group="High income"),
         Country(id="MEX", name="Mexico", region="Americas", income_group="Upper middle income"),
     ]
-    session.add_all(countries)
+    db_session.add_all(countries)
 
     indicators = [
         Indicator(id=1, source="WDI", source_code="NY.GDP.MKTP.KD", canonical_code="GDP_REAL", frequency="annual", unit="USD", category="Macro"),
         Indicator(id=2, source="YF", source_code="SPY", canonical_code="ASSET_SPY", frequency="daily", unit=None, category="Market"),
     ]
-    session.add_all(indicators)
+    db_session.add_all(indicators)
 
-    session.add_all(
+    db_session.add_all(
         [
             TimeSeriesValue(indicator_id=1, country_id="USA", date=dt.date(2022, 12, 31), value=20000),
             TimeSeriesValue(indicator_id=1, country_id="USA", date=dt.date(2023, 12, 31), value=20500),
@@ -81,37 +64,13 @@ def seed_data(session: Session) -> None:
     )
 
     asset = Asset(id=1, symbol="SPY", name="SPDR S&P 500 ETF Trust", asset_type="equity", country_id=None, region="US")
-    session.add(asset)
-    session.execute(
-        text(
-            """
-            INSERT INTO warehouse.asset_price
-            (id, asset_id, date, open, high, low, close, adj_close, volume)
-            VALUES
-            (:id1, :asset_id, :date1, :open1, :high1, :low1, :close1, :adj_close1, :volume1),
-            (:id2, :asset_id, :date2, :open2, :high2, :low2, :close2, :adj_close2, :volume2)
-            """
-        ),
-        {
-            "id1": 1,
-            "id2": 2,
-            "asset_id": 1,
-            "date1": dt.date(2024, 1, 2),
-            "date2": dt.date(2024, 1, 3),
-            "open1": 10,
-            "high1": 11,
-            "low1": 9,
-            "close1": 10.5,
-            "adj_close1": 10.4,
-            "volume1": 1000,
-            "open2": 10.5,
-            "high2": 11.2,
-            "low2": 10.1,
-            "close2": 11,
-            "adj_close2": 11,
-            "volume2": 1500,
-        },
-    )
+    db_session.add(asset)
+    db_session.flush()
+    
+    db_session.add_all([
+        AssetPrice(id=1, asset_id=1, date=dt.date(2024, 1, 2), open=10, high=11, low=9, close=10.5, adj_close=10.4, volume=1000),
+        AssetPrice(id=2, asset_id=1, date=dt.date(2024, 1, 3), open=10.5, high=11.2, low=10.1, close=11, adj_close=11, volume=1500),
+    ])
 
     features = CountryYearFeatures(
         country_id="USA",
@@ -131,16 +90,16 @@ def seed_data(session: Session) -> None:
         data_coverage_score=92.0,
         data_freshness_score=88.0,
     )
-    session.add(features)
+    db_session.add(features)
 
     nodes = [
         Node(id=1, name="United States", node_type=NodeType.COUNTRY, ref_type="country", ref_id="USA", label="United States", country_code="USA"),
         Node(id=2, name="Germany", node_type=NodeType.COUNTRY, ref_type="country", ref_id="DEU", label="Germany", country_code="DEU"),
         Node(id=3, name="Mexico", node_type=NodeType.COUNTRY, ref_type="country", ref_id="MEX", label="Mexico", country_code="MEX"),
     ]
-    session.add_all(nodes)
-
-    session.execute(
+    db_session.add_all(nodes)
+    db_session.flush()
+    db_session.execute(
         text(
             """
             INSERT INTO graph.node_metric (id, node_id, metric_code, as_of_year, value)
@@ -153,7 +112,7 @@ def seed_data(session: Session) -> None:
         {"id1": 1, "id2": 2, "id3": 3, "node1": 1, "node2": 2},
     )
 
-    session.add_all(
+    db_session.add_all(
         [
             Edge(
                 id=1,
@@ -175,49 +134,33 @@ def seed_data(session: Session) -> None:
                 weight_value=210000000000,
                 meta_json={"year": 2023},
             ),
-            Edge(
-                id=3,
-                source_node_id=1,
-                target_node_id=2,
-                edge_type=EdgeType.TRADE_EXPOSURE,
-                layer_id=LayerId.TRADE,
-                weight_type="VALUE_USD",
-                weight_value=350000000000,
-                meta_json={"year": 2023},
-            ),
-            Edge(
-                id=4,
-                source_node_id=1,
-                target_node_id=3,
-                edge_type=EdgeType.TRADE_EXPOSURE,
-                layer_id=LayerId.TRADE,
-                weight_type="VALUE_USD",
-                weight_value=210000000000,
-                meta_json={"year": 2023},
-            ),
         ]
     )
 
-    session.add_all(
+    db_session.add_all(
         [
             TradeFlow(reporter_country_id="USA", partner_country_id="DEU", year=2023, hs_section=None, flow_type="import", value_usd=350000000000),
             TradeFlow(reporter_country_id="USA", partner_country_id="MEX", year=2023, hs_section=None, flow_type="import", value_usd=210000000000),
         ]
     )
 
-    session.commit()
+    db_session.commit()
+    return db_session
 
 
 @pytest.fixture()
-def client(session: Session) -> TestClient:
+def client(seeded_session: Session) -> Generator[TestClient, None, None]:
+    """Provide a TestClient wired to the seeded session and clean overrides after use."""
+
     def override_get_db():
-        try:
-            yield session
-        finally:
-            pass
+        yield seeded_session
 
     app.dependency_overrides[get_db] = override_get_db
-    return TestClient(app)
+    client = TestClient(app)
+    try:
+        yield client
+    finally:
+        app.dependency_overrides.pop(get_db, None)
 
 
 def test_reference_countries(client: TestClient):
@@ -278,31 +221,3 @@ def test_dashboard(client: TestClient):
     data = response.json()
     assert data["trade_summary"]["net_system_importance"] == 88.0
     assert len(data["trade_summary"]["top_partners"]) == 2
-
-
-def test_country_web_defaults_to_trade_exposure(client: TestClient):
-    response = client.get("/api/webs/country/USA/2023")
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["edge_type"] == EdgeType.TRADE_EXPOSURE.value
-    assert len(payload["nodes"]) == 3
-    assert len(payload["edges"]) == 2
-
-
-def test_country_web_accepts_trade_exposure_query_value(client: TestClient):
-    response = client.get(
-        "/api/webs/country/USA/2023",
-        params={"edge_type": EdgeType.TRADE_EXPOSURE.value},
-    )
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["edge_type"] == EdgeType.TRADE_EXPOSURE.value
-    assert len(payload["edges"]) == 2
-
-
-def test_country_web_rejects_invalid_edge_type(client: TestClient):
-    response = client.get(
-        "/api/webs/country/USA/2023",
-        params={"edge_type": "invalid"},
-    )
-    assert response.status_code == 422

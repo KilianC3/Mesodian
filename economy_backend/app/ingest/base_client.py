@@ -1,10 +1,7 @@
-"""Provider-agnostic HTTP and SDMX client utilities for ingestion.
-
-This module underpins the ingestion layer by standardizing retry/backoff logic
-for REST providers (FRED, WDI, Comtrade, etc.) and by exposing a thin SDMX
-helper for providers served via DB.nomics-style APIs. The main entry point is
-``AsyncHttpClient`` for async GET calls, which is constructed via
-``get_provider_client`` inside provider-specific clients.
+"""
+Shared HTTP client infrastructure for ingestion pipelines. Implements retry
+policies, backoff, and resilience helpers that provider-specific clients reuse
+to fetch economic, trade, finance, and ESG data reliably.
 """
 
 import asyncio
@@ -37,13 +34,26 @@ class ProviderLimits:
 PROVIDER_LIMITS: Dict[str, ProviderLimits] = {
     "FRED": ProviderLimits(max_retries=3, backoff_base_seconds=0.5, timeout_seconds=10.0),
     "WDI": ProviderLimits(max_retries=4, backoff_base_seconds=0.75, timeout_seconds=15.0),
-    "COMTRADE": ProviderLimits(max_retries=5, backoff_base_seconds=1.0, timeout_seconds=20.0),
+    "COMTRADE": ProviderLimits(max_retries=5, backoff_base_seconds=1.0, timeout_seconds=30.0),
+    "PATENTSVIEW": ProviderLimits(max_retries=3, backoff_base_seconds=1.0, timeout_seconds=20.0),
+    "EIA": ProviderLimits(max_retries=4, backoff_base_seconds=0.5, timeout_seconds=20.0),
+    "EMBER": ProviderLimits(max_retries=3, backoff_base_seconds=1.0, timeout_seconds=30.0),
+    "YFINANCE": ProviderLimits(max_retries=2, backoff_base_seconds=0.5, timeout_seconds=10.0),
+    "STOOQ": ProviderLimits(max_retries=2, backoff_base_seconds=0.5, timeout_seconds=10.0),
+    "FAOSTAT": ProviderLimits(max_retries=4, backoff_base_seconds=1.5, timeout_seconds=60.0),
+    "AFDB": ProviderLimits(max_retries=4, backoff_base_seconds=1.5, timeout_seconds=60.0),
+    "OECD": ProviderLimits(max_retries=4, backoff_base_seconds=1.0, timeout_seconds=30.0),
+    "EUROSTAT": ProviderLimits(max_retries=3, backoff_base_seconds=1.0, timeout_seconds=30.0),
+    "IMF": ProviderLimits(max_retries=4, backoff_base_seconds=1.0, timeout_seconds=30.0),
+    "ECB": ProviderLimits(max_retries=3, backoff_base_seconds=0.75, timeout_seconds=20.0),
+    "BIS": ProviderLimits(max_retries=4, backoff_base_seconds=1.0, timeout_seconds=30.0),
+    "UNCTAD": ProviderLimits(max_retries=4, backoff_base_seconds=1.5, timeout_seconds=90.0),
+    "GDELT": ProviderLimits(max_retries=3, backoff_base_seconds=1.0, timeout_seconds=60.0),
+    "OPENALEX": ProviderLimits(max_retries=3, backoff_base_seconds=1.0, timeout_seconds=30.0),
 }
 
 
 class AsyncHttpClient:
-    """Lightweight async GET client with retry/backoff for ingestion services."""
-
     def __init__(
         self,
         base_url: str,
@@ -126,7 +136,6 @@ class AsyncHttpClient:
             raise HttpClientError(message) from exc
 
     async def get_json(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Fetch JSON from ``path`` and raise ``HttpClientError`` on failure."""
         response = await self._request(path, params=params)
         try:
             return response.json()
@@ -134,13 +143,11 @@ class AsyncHttpClient:
             raise HttpClientError(f"Failed to decode JSON response from {response.url}") from exc
 
     async def get_text(self, path: str, params: Optional[Dict[str, Any]] = None) -> str:
-        """Fetch text from ``path`` with retry/backoff semantics."""
         response = await self._request(path, params=params)
         return response.text
 
 
 def get_provider_client(provider_name: str, base_url: str) -> AsyncHttpClient:
-    """Instantiate an ``AsyncHttpClient`` with provider-specific rate limits."""
     limits = PROVIDER_LIMITS.get(provider_name.upper())
     if limits is None:
         raise ValueError(f"Unknown provider: {provider_name}")
@@ -153,16 +160,31 @@ def get_provider_client(provider_name: str, base_url: str) -> AsyncHttpClient:
 
 
 def fetch_sdmx_dataset(
-    base_url: str, dataset_code: str, params: Optional[Dict[str, Any]] = None
+    base_url: str,
+    dataset_code: str,
+    params: Optional[Dict[str, Any]] = None,
+    *,
+    sample_config: Optional["SampleConfig"] = None,
 ):
-    """Fetch and parse an SDMX dataset into a pandas DataFrame."""
+    """Fetch SDMX dataset with optional sample mode limiting."""
     try:
         import pandas as pd
         import pandasdmx
     except ImportError as exc:  # pragma: no cover - depends on optional dependency
         raise SDMXClientError("pandas and pandasdmx are required to fetch SDMX datasets") from exc
+    
+    # Import SampleConfig if needed for type checking
+    if sample_config is None:
+        from app.ingest.sample_mode import SampleConfig
+        sample_config = SampleConfig()
 
     params = params or {}
+    
+    # Add limiting parameters for SDMX in sample mode
+    if sample_config.enabled:
+        # Standard SDMX parameters for limiting
+        params["firstNObservations"] = str(sample_config.max_records_per_country)
+    
     url = f"{base_url.rstrip('/')}/data/{dataset_code}"
 
     try:
@@ -172,11 +194,14 @@ def fetch_sdmx_dataset(
         raise SDMXClientError(f"SDMX request to {url} failed: {exc}") from exc
 
     try:
-        message = pandasdmx.read_sdmx(response.content)
+        # pandasdmx needs a file-like object, not bytes
+        from io import BytesIO
+        message = pandasdmx.read_sdmx(BytesIO(response.content))
         if not message.data:
             raise SDMXClientError(f"SDMX response from {url} contained no data")
         dataset = message.data[0]
-        data = dataset.to_pandas()  # type: ignore[assignment]
+        # Use pandasdmx.to_pandas() for GenericDataSet objects
+        data = pandasdmx.to_pandas(dataset)
         if isinstance(data, pd.Series):
             df = data.rename("value").reset_index()
         else:
@@ -186,6 +211,11 @@ def fetch_sdmx_dataset(
             value_columns = [col for col in df.columns if str(col).lower() in {"obs_value", "value"}]
             if value_columns:
                 df = df.rename(columns={value_columns[0]: "value"})
+        
+        # Additional limiting in case firstNObservations wasn't respected
+        if sample_config.enabled and len(df) > sample_config.max_records_per_country:
+            df = df.tail(sample_config.max_records_per_country)
+        
         return df
     except Exception as exc:  # pragma: no cover - parsing errors are data dependent
         raise SDMXClientError(f"Failed to parse SDMX response from {url}: {exc}") from exc

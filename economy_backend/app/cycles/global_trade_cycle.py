@@ -1,3 +1,9 @@
+"""
+Compute global trade cycle indices using PCA over trade-related indicators.
+Provides utilities for standardising series, extracting principal components,
+and mapping factor scores into regimes stored in `global_cycle_index`.
+"""
+
 from __future__ import annotations
 
 import logging
