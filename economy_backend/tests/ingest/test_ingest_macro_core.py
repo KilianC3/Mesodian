@@ -34,7 +34,7 @@ def test_restricted_ingest(monkeypatch: pytest.MonkeyPatch) -> None:
     async def fake_fred(series_id: str, **_: object):
         return {"observations": [{"date": "2023-01-01", "value": "123.4"}]}
 
-    async def fake_wdi(country: str, indicator: str):
+    async def fake_wdi(country: str, indicator: str, **kwargs):
         assert country == "usa"
         assert indicator == "NY.GDP.MKTP.KD"
         return [{}, [{"date": "2022", "value": 456.7}]]

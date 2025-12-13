@@ -68,7 +68,7 @@ def setup_session() -> Session:
 def test_eia_ember_co2_ingestion(monkeypatch: pytest.MonkeyPatch) -> None:
     session = setup_session()
 
-    async def fake_eia(series_id: str):
+    async def fake_eia(series_id: str, **kwargs):
         return {"series": [{"data": [["2023-01-01", 10.0], ["2023-02-01", 12.0]]}]}
 
     monkeypatch.setattr(eia_client, "fetch_series", fake_eia)
@@ -80,7 +80,9 @@ def test_eia_ember_co2_ingestion(monkeypatch: pytest.MonkeyPatch) -> None:
             {"Country code": "USA", "Technology": "Wind", "TWh": 7, "Year": 2022},
         ]
     )
-    monkeypatch.setattr(ember_client, "fetch_csv", lambda url: df)
+    async def fake_ember(**kwargs):
+        return df
+    monkeypatch.setattr(ember_client, "fetch_ember_data", fake_ember)
     ember_client.ingest_full(session, country_subset=["USA"], technology_subset=["Solar", "Wind"])
 
     co2_df = pd.DataFrame(
@@ -133,7 +135,7 @@ def test_market_price_ingestion(monkeypatch: pytest.MonkeyPatch) -> None:
             "Volume": [1000],
         }
     )
-    monkeypatch.setattr(stooq_client, "fetch_stooq_csv", lambda symbol: stooq_df)
+    monkeypatch.setattr(stooq_client, "fetch_stooq_csv", lambda symbol, **kwargs: stooq_df)
 
     stooq_client.ingest_full(session, symbol_subset=["^SPX"])
 
@@ -167,7 +169,7 @@ def test_events_ingestion(monkeypatch: pytest.MonkeyPatch) -> None:
             {"Actor1Geo_CountryCode": "USA", "SQLDATE": 20220601, "NumEvents": 2, "GoldsteinScale": -1.0},
         ]
     )
-    monkeypatch.setattr(gdelt_client, "fetch_gdelt_events", lambda params=None: gdelt_df)
+    monkeypatch.setattr(gdelt_client, "fetch_gdelt_events", lambda params=None, **kwargs: gdelt_df)
     gdelt_client.ingest_full(session, country_subset=["USA"], year_subset=[2022])
 
     monkeypatch.setattr(rss_client, "fetch_feed", lambda url: [{"title": "Rate decision", "published": "2023-02-01"}])

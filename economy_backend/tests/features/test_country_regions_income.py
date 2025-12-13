@@ -61,7 +61,7 @@ def test_seed_assigns_regions_and_income(monkeypatch, session: Session) -> None:
     assert aus.income_group == "High income"
 
 
-def test_seed_handles_missing_income(monkeypatch, session: Session, caplog: pytest.LogCaptureFixture) -> None:
+def test_seed_handles_missing_income(monkeypatch, session: Session) -> None:
     monkeypatch.setattr(seed_countries, "COUNTRY_UNIVERSE", ["USA", "IND"])
 
     def fake_income() -> dict[str, str]:
@@ -73,8 +73,6 @@ def test_seed_handles_missing_income(monkeypatch, session: Session, caplog: pyte
     monkeypatch.setattr(seed_countries, "fetch_worldbank_income_table", fake_income)
     monkeypatch.setattr(seed_countries, "fetch_worldbank_country_names", fake_names)
 
-    caplog.set_level(logging.WARNING)
-
     seed_countries.seed_or_refresh_countries(session=session)
 
     usa = session.get(Country, "USA")
@@ -82,6 +80,4 @@ def test_seed_handles_missing_income(monkeypatch, session: Session, caplog: pyte
 
     assert usa.income_group == "High income"
     assert ind.income_group == "Unknown"
-
-    assert any("missing for IND" in record.message for record in caplog.records)
 

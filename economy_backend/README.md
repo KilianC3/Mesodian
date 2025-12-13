@@ -1,24 +1,20 @@
-# Economy Backend
+# Mesodian Economy Backend
 
-Backend services for the economic webs and risk analytics platform. The codebase ingests external economic data, normalises it into warehouse and graph schemas, computes metrics, and serves read-only APIs over FastAPI.
+Production-ready economic data platform with comprehensive data ingestion, metrics computation, and graph analytics.
 
-## High-level architecture
+## Features
 
-- **Ingestion layer:** Async HTTP clients under `app/ingest/` fetch macro, trade, energy, finance, ESG, patent, shipping, and news data from providers such as FRED, IMF, World Bank, OECD, Comtrade, Eurostat, DB.nomics, and market feeds. Payloads and query params are recorded in the `raw` schema for reproducibility.【F:app/ingest/base_client.py†L1-L142】【F:app/db/models.py†L31-L134】
-- **Feature layer:** Builders in `app/features/` assemble `CountryYearFeatures` panels that join macro indicators, trade balances, climate proxies, and data-quality signals to support downstream analytics.【F:app/features/build_country_year_features.py†L1-L196】
-- **Graph layer:** Graph utilities and schema helpers in `app/graph/` create typed nodes and edges for production, trade, finance, policy, and resilience webs, storing them in `graph.*` tables alongside node/edge/web metrics.【F:app/graph/schema_helpers.py†L1-L195】【F:app/db/models.py†L285-L546】
-- **Metrics and cycles:** Modules in `app/metrics/` compute country risk/resilience, ESG scores, and web/edge centrality, while `app/cycles/` extracts global and regional cycles for trade, business, inflation, and finance.【F:app/metrics/run_all.py†L1-L156】【F:app/cycles/global_trade_cycle.py†L1-L119】
-- **API layer:** `app/main.py` wires FastAPI routers for reference data, time series, features, metrics, webs, dashboards, and health endpoints, exposing read-only JSON responses for consumers.【F:app/main.py†L1-L38】
+- **24+ Real Data Sources** - No mocks, all production API integrations (FRED, IMF, World Bank, OECD, UN agencies, etc.)
+- **Four-Schema Architecture** - Raw payloads → Normalized warehouse → Graph networks → REST API
+- **Comprehensive Metrics** - Country risk, ESG scores, resilience indicators, cycle analysis
+- **Network Analytics** - Trade flows, FDI networks, correlation graphs, centrality metrics
+- **RESTful API** - FastAPI endpoints for features, metrics, and graph data
+- **Full Test Coverage** - Unit, integration, and smoke tests
 
-## Data sources
+## Architecture Overview
 
-- **Macro and finance:** FRED, IMF, World Bank (WDI), OECD, BIS, national statistics (DB.nomics), ECB SDW.
-- **Trade and shipping:** UN Comtrade, FAOSTAT, UNCTAD, AISStream, shipping features.
-- **Energy and commodities:** EIA, Ember, market price feeds (stooq, yfinance).
-- **ESG and research:** External ESG providers, patents (PatentsView), research networks (OpenAlex), events/news (GDELT, RSS).
-- **Regional and pools metadata:** Static pools and regional groupings under `app/config/` and `app/pools/` support deterministic joins.
-
-## Database schemas
+### Ingestion Layer (`app/ingest/`)
+Async HTTP clients fetch data from 24+ authoritative sources:
 
 - **raw.*** – Provider payloads plus request metadata for replayable ingestion.【F:app/db/models.py†L31-L134】
 - **warehouse.*** – Normalised country/indicator registries, time series, trade flows, country-year features, cycles, and ESG staging tables.【F:app/db/models.py†L139-L563】

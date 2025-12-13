@@ -55,50 +55,64 @@ REGIONAL_INDEX_CODES: Set[str] = {
 
 
 # Country level resilience, risk, policy and ESG metrics
+# Consolidated from 24 → 18 codes (removed redundant composites & sub-components)
 COUNTRY_METRIC_CODES: Set[str] = {
+    # Core resilience (sub-components moved to metadata)
     "CR_RESILIENCE",
-    "CR_MACRO_FISCAL",
-    "CR_EXTERNAL_FX",
-    "CR_FIN_SYSTEM",
+    # Risk indicators
     "RISK_FOOD",
     "RISK_ENERGY",
     "RISKOP_TRANSITION",
-    "HOUSING_STRESS",
-    "HH_STRESS",
     "PHYSICAL_CLIMATE_WATER_STRESS",
     "CRITICAL_IMPORT_DEPENDENCE",
-    "HOUSEHOLD_HOUSING_STRESS",
     "CLIMATE_TOTAL_RISK",
+    # Household vulnerability (consolidated from 3 redundant metrics)
+    "HOUSEHOLD_VULNERABILITY",
+    # Macro/policy indicators
     "POLICY_STANCE",
     "RECESSION_INDICATOR",
     "INFLATION_PRESSURE",
     "CREDIT_EXCESS",
+    # Data quality
     "DQ_COVERAGE",
     "DQ_FRESHNESS",
+    # Network
     "NET_SYS_IMPORTANCE",
-    "ESG_E_SOV",
-    "ESG_S_SOV",
-    "ESG_G_SOV",
+    # ESG (keep total only in primary view)
     "ESG_TOTAL_SOV",
 }
 
 
 # Web-level metrics attached to graph webs
+# Consolidated: removed theoretical metrics with low actionability
 WEB_METRIC_CODES: Set[str] = {
     "WEB_RISK_SCORE",
     "WEB_CONCENTRATION",
     "WEB_STRATEGIC_IMPORTANCE",
     "WEB_RESILIENCE",
-    "WEB_PROPAGATION",
-    "WEB_FRAGMENTATION",
 }
 
 
 # Edge-level (relationship) metrics
+# Consolidated: removed EDGE_SUBSTITUTABILITY (low signal)
 EDGE_METRIC_CODES: Set[str] = {
     "EDGE_DEPENDENCE",
     "EDGE_CRITICALITY",
-    "EDGE_SUBSTITUTABILITY",
+}
+
+
+# Analyst-focused equity metrics (new - Week 1)
+ANALYST_METRIC_CODES: Set[str] = {
+    "EARNINGS_SURPRISE_3M",       # Earnings actual vs estimate deviation (3mo rolling)
+    "PE_PERCENTILE",              # P/E ratio percentile vs 5-year history
+    "SECTOR_ROTATION_SIGNAL",     # Relative strength: sector vs broad market
+    "EM_RISK_PREMIUM",            # EM equity yield spread over US
+    "VALUATION_SPREAD",           # Cross-country valuation dispersion
+    "SENTIMENT_EXTREME",          # VIX percentile + put/call ratio signal
+    "INSIDER_BUYING_SURGE",       # Insider buy/sell ratio acceleration
+    "ETF_FLOW_5D",                # 5-day ETF net flows (sector rotation proxy)
+    "POLICY_SURPRISE",            # Central bank dovish/hawkish vs consensus
+    "LIQUIDITY_SCORE",            # Market depth & bid-ask spread composite
 }
 
 
@@ -108,6 +122,7 @@ METRIC_SCOPE_MAP: Dict[str, MetricScope] = {
     **{code: MetricScope.COUNTRY for code in COUNTRY_METRIC_CODES},
     **{code: MetricScope.WEB for code in WEB_METRIC_CODES},
     **{code: MetricScope.EDGE for code in EDGE_METRIC_CODES},
+    **{code: MetricScope.COUNTRY for code in ANALYST_METRIC_CODES},  # Analyst metrics are country-scoped
 }
 
 

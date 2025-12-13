@@ -8,6 +8,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.models import Asset, AssetPrice, RawYfinance
+from app.ingest.sample_mode import (
+    SampleConfig,
+    IngestionError,
+)
 from app.ingest.utils import store_raw_payload
 from app.pools.loader import get_all_tickers
 
@@ -20,23 +24,26 @@ def fetch_prices(tickers: List[str], start: dt.date, end: dt.date) -> Dict[str, 
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise RuntimeError("yfinance is required for price ingestion") from exc
 
-    data = yf.download(
-        tickers=tickers,
-        start=start,
-        end=end + dt.timedelta(days=1),
-        group_by="ticker",
-        auto_adjust=False,
-        progress=False,
-    )
+    try:
+        data = yf.download(
+            tickers=tickers,
+            start=start,
+            end=end + dt.timedelta(days=1),
+            group_by="ticker",
+            auto_adjust=False,
+            progress=False,
+        )
 
-    if isinstance(data.columns, pd.MultiIndex):
-        result: Dict[str, pd.DataFrame] = {}
-        for ticker in tickers:
-            if ticker in data:
-                result[ticker] = data[ticker].dropna(how="all")
-        return result
-    else:
-        return {tickers[0]: data.dropna(how="all")}
+        if isinstance(data.columns, pd.MultiIndex):
+            result: Dict[str, pd.DataFrame] = {}
+            for ticker in tickers:
+                if ticker in data:
+                    result[ticker] = data[ticker].dropna(how="all")
+            return result
+        else:
+            return {tickers[0]: data.dropna(how="all")}
+    except Exception as e:
+        raise IngestionError("YFINANCE", "N/A", f"Fetch error: {e}")
 
 
 def _upsert_asset(session: Session, symbol: str, *, asset_type: str = "EQUITY") -> Asset:
@@ -50,6 +57,16 @@ def _upsert_asset(session: Session, symbol: str, *, asset_type: str = "EQUITY") 
 
 
 def _upsert_prices(session: Session, asset: Asset, df: pd.DataFrame) -> None:
+    import numpy as np
+    
+    def convert_value(val):
+        """Convert numpy/pandas types to Python native types."""
+        if val is None or pd.isna(val):
+            return None
+        if isinstance(val, (np.integer, np.floating)):
+            return float(val)
+        return val
+    
     for date, row in df.iterrows():
         existing = (
             session.query(AssetPrice)
@@ -57,21 +74,20 @@ def _upsert_prices(session: Session, asset: Asset, df: pd.DataFrame) -> None:
             .one_or_none()
         )
         values = {
-            "open": row.get("Open"),
-            "high": row.get("High"),
-            "low": row.get("Low"),
-            "close": row.get("Close"),
-            "adj_close": row.get("Adj Close"),
-            "volume": row.get("Volume"),
+            "open": convert_value(row.get("Open")),
+            "high": convert_value(row.get("High")),
+            "low": convert_value(row.get("Low")),
+            "close": convert_value(row.get("Close")),
+            "adj_close": convert_value(row.get("Adj Close")),
+            "volume": convert_value(row.get("Volume")),
         }
         if existing:
             for field, value in values.items():
                 setattr(existing, field, value)
         else:
-            next_id = session.query(func.coalesce(func.max(AssetPrice.id), 0)).scalar() or 0
+            # Let database auto-increment handle ID assignment
             session.add(
                 AssetPrice(
-                    id=int(next_id) + 1,
                     asset_id=asset.id,
                     date=date.date(),
                     **values,
@@ -86,24 +102,42 @@ def ingest_full(
     lookback_days: int = 365,
     batch_size: int = 25,
     throttle_seconds: float = 0.1,
+    sample_config: Optional[SampleConfig] = None,
 ) -> None:
+    """Ingest YFINANCE data with optional sample mode."""
+    sample_config = sample_config or SampleConfig()
     all_tickers = list(tickers) if tickers else get_all_tickers()
+    
+    # Limit tickers in sample mode
+    if sample_config.enabled:
+        all_tickers = all_tickers[:sample_config.max_records_per_ticker]
+    
     end_date = dt.date.today()
-    start_date = end_date - dt.timedelta(days=lookback_days)
+    # In sample mode, only fetch 5 days of data
+    if sample_config.enabled:
+        start_date = end_date - dt.timedelta(days=sample_config.max_records_per_ticker)
+    else:
+        start_date = end_date - dt.timedelta(days=lookback_days)
 
     for i in range(0, len(all_tickers), batch_size):
         batch = all_tickers[i : i + batch_size]
         try:
             price_data = fetch_prices(batch, start=start_date, end=end_date)
-        except Exception:
-            logger.exception("Failed to fetch yfinance batch %s", batch)
+        except IngestionError:
+            raise
+        except Exception as e:
+            logger.error(f"YFINANCE: Failed to fetch batch {batch}: {e}")
+            if sample_config.strict_validation:
+                raise IngestionError("YFINANCE", "N/A", f"Batch fetch failed: {e}")
             continue
 
         serialized: Dict[str, Dict[str, List[object]]] = {}
         for ticker, df in price_data.items():
             reset_df = df.reset_index()
-            if "index" in reset_df.columns:
-                reset_df["index"] = reset_df["index"].astype(str)
+            # Convert all datetime/timestamp columns to strings for JSON serialization
+            for col in reset_df.columns:
+                if pd.api.types.is_datetime64_any_dtype(reset_df[col]):
+                    reset_df[col] = reset_df[col].astype(str)
             serialized[ticker] = reset_df.to_dict(orient="list")
 
         store_raw_payload(
@@ -114,10 +148,16 @@ def ingest_full(
         )
 
         for ticker, df in price_data.items():
-            asset = _upsert_asset(session, ticker)
-            _upsert_prices(session, asset, df)
+            try:
+                asset = _upsert_asset(session, ticker)
+                _upsert_prices(session, asset, df)
+            except Exception as e:
+                logger.error(f"YFINANCE: Failed to upsert {ticker}: {e}")
+                if sample_config.strict_validation:
+                    raise IngestionError("YFINANCE", ticker, f"Upsert failed: {e}")
 
         session.commit()
+        logger.info(f"YFINANCE: Ingested {len(price_data)} tickers")
         if throttle_seconds:
             time.sleep(throttle_seconds)
 

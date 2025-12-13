@@ -1,0 +1,506 @@
+# Provider catalogs: endpoints, fixed series codes, and throttling-friendly constants.
+
+WDI:
+  base_url: "https://api.worldbank.org/v2"
+  indicators:
+    - NY.GDP.MKTP.KD
+    - NY.GDP.MKTP.KD.ZG
+    - NY.GDP.PCAP.KD
+    - FP.CPI.TOTL.ZG
+    - SL.UEM.TOTL.ZS
+    - BN.CAB.XOKA.GD.ZS
+    - BN.CAB.XOKA.CD
+    - FI.RES.TOTL.MO
+    - DT.DOD.DECT.CD
+    - DT.DOD.DSTC.ZS
+    - FS.AST.PRVT.GD.ZS
+    - NE.TRD.GNFS.ZS
+    - GC.DOD.TOTL.GD.ZS
+    - SP.POP.TOTL
+    - NV.AGR.TOTL.ZS
+    - NV.IND.TOTL.ZS
+    - NV.SRV.TOTL.ZS
+
+IMF:
+  # IMF data via sdmx1 client using IMF_DATA source
+  # Uses sdmx.Client("IMF_DATA") with dataflow codes
+  base_url: "https://api.imf.org/external/sdmx/2.1"
+  datasets:
+    CPI:
+      # Consumer Price Index dataflow
+      # Key format: {COUNTRY}+{COUNTRY2}...
+      canonical_indicator: "IMF_CPI_INDEX"
+      key_suffix: ""
+    
+    # International Financial Statistics (IFS) - Key Economic Indicators
+    PCPI:
+      # Consumer Prices, Index (2010=100)
+      canonical_indicator: "IMF_CPI_2010"
+      key_suffix: ""
+    
+    PCPIPCH:
+      # Inflation, average consumer prices (Annual percent change)
+      canonical_indicator: "IMF_INFLATION_PCT"
+      key_suffix: ""
+    
+    NGDP:
+      # Gross Domestic Product, current prices (National currency)
+      canonical_indicator: "IMF_GDP_CURRENT"
+      key_suffix: ""
+    
+    NGDP_R:
+      # Gross Domestic Product, constant prices (Index)
+      canonical_indicator: "IMF_GDP_REAL_INDEX"
+      key_suffix: ""
+    
+    NGDPRPPPPC:
+      # GDP per capita, Purchasing Power Parity (Current international dollar)
+      canonical_indicator: "IMF_GDP_PER_CAPITA_PPP"
+      key_suffix: ""
+    
+    # Balance of Payments
+    BCA:
+      # Current Account Balance (USD billions)
+      canonical_indicator: "IMF_CURRENT_ACCOUNT"
+      key_suffix: ""
+    
+    BCA_NGDPD:
+      # Current Account Balance (Percent of GDP)
+      canonical_indicator: "IMF_CURRENT_ACCOUNT_PCT_GDP"
+      key_suffix: ""
+    
+    # Monetary & Financial
+    FM:
+      # Money Supply M2 (National currency)
+      canonical_indicator: "IMF_M2"
+      key_suffix: ""
+    
+    FPOLM:
+      # Monetary Policy Rate (Percent per annum)
+      canonical_indicator: "IMF_POLICY_RATE"
+      key_suffix: ""
+    
+    FILR:
+      # Lending Rate (Percent per annum)
+      canonical_indicator: "IMF_LENDING_RATE"
+      key_suffix: ""
+    
+    # External Sector
+    ENDA:
+      # External Debt (USD billions)
+      canonical_indicator: "IMF_EXTERNAL_DEBT"
+      key_suffix: ""
+    
+    ENDA_NGDPD:
+      # External Debt (Percent of GDP)
+      canonical_indicator: "IMF_EXTERNAL_DEBT_PCT_GDP"
+      key_suffix: ""
+    
+    # Fiscal (Government Finance)
+    GGR:
+      # General Government Revenue (National currency)
+      canonical_indicator: "IMF_GOVT_REVENUE"
+      key_suffix: ""
+    
+    GGXCNL:
+      # General Government Net Lending/Borrowing (National currency)
+      canonical_indicator: "IMF_GOVT_BALANCE"
+      key_suffix: ""
+    
+    GGXWDG:
+      # General Government Gross Debt (National currency)
+      canonical_indicator: "IMF_GOVT_DEBT"
+      key_suffix: ""
+    
+    GGXWDG_NGDP:
+      # General Government Gross Debt (Percent of GDP)
+      canonical_indicator: "IMF_GOVT_DEBT_PCT_GDP"
+      key_suffix: ""
+    
+    # Trade & Reserves
+    TX:
+      # Exports of goods and services (National currency)
+      canonical_indicator: "IMF_EXPORTS"
+      key_suffix: ""
+    
+    TM:
+      # Imports of goods and services (National currency)
+      canonical_indicator: "IMF_IMPORTS"
+      key_suffix: ""
+    
+    FDIR:
+      # Total Reserves (USD billions)
+      canonical_indicator: "IMF_RESERVES_TOTAL"
+      key_suffix: ""
+    
+    FIDR:
+      # Reserves in months of imports
+      canonical_indicator: "IMF_RESERVES_MONTHS_IMPORTS"
+      key_suffix: ""
+    
+    # Exchange Rates
+    ENDA_XDC_USD:
+      # National Currency per US Dollar, period average
+      canonical_indicator: "IMF_FX_RATE_USD"
+      key_suffix: ""
+    
+    # Employment
+    LUR:
+      # Unemployment rate (Percent of total labor force)
+      canonical_indicator: "IMF_UNEMPLOYMENT_RATE"
+      key_suffix: ""
+
+OECD:
+  base_url: "https://sdmx.oecd.org/public/api/v1/en/data"
+  dataflows:
+    DP_LIVE:
+      measures:
+        GDP_PER_CAPITA: "GDP"
+        UNEMPLOYMENT_RATE: "UNEMP"
+        INFLATION_CPI: "CPI"
+      frequency: "A"
+    MEI:
+      measures:
+        CPI_ALL_ITEMS: "CPALTT01"
+        INDUSTRIAL_PRODUCTION: "PRINTO01"
+        CLI: "LOLITOAA"
+      frequency: "M"
+    QNA:
+      measures:
+        GDP_VOLUME: "B1_GE"
+      frequency: "Q"
+
+EUROSTAT:
+  base_url: "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data"
+  datasets:
+    namq_10_gdp:
+      description: "Quarterly GDP at market prices"
+      params:
+        unit: "CLV10_MEUR"
+        s_adj: "SCA"
+        na_item: "B1GQ"
+    sts_inpr_q:
+      description: "Quarterly industrial production index"
+      params:
+        indic_bt: "PROD"
+        s_adj: "SA"
+        nace_r2: "B-D"
+    une_rt_q:
+      description: "Quarterly unemployment rate"
+      params:
+        age: "Y15-74"
+        sex: "T"
+        unit: "PC_ACT"
+    prc_hicp_manr:
+      description: "Monthly/quarterly HICP inflation rate"
+      params:
+        coicop: "CP00"
+        unit: "RCH_A"
+
+ONS:
+  base_url: "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries"
+  series:
+    UK_GDP_VOL_Q:
+      cdid: "IHYQ"
+      dataset: "qna"
+      description: "GDP quarter on quarter growth"
+    UK_CPIH_INDEX:
+      cdid: "L522"
+      dataset: "mm23"
+      description: "CPIH all items 12-month rate"
+    UK_UNEMP_RATE:
+      cdid: "MGSX"
+      dataset: "lms"
+      description: "Unemployment rate aged 16+"
+    UK_HPI:
+      cdid: "HOXM"
+      dataset: "hpi"
+      description: "UK House Price Index"
+
+ECB_SDW:
+  base_url: "https://sdw-wsrest.ecb.europa.eu/service/data"
+  series_keys:
+    EA_POLICY_RATE: "FM.D.U2.EUR.4F.KR.DFR.LEV"
+    EA_MONEY_MARKET_3M: "FM.D.U2.EUR.4F.MM.EURIBOR3MD_.HSTA"
+    EA_YIELD_2Y: "YC.B.U2.EUR.4F.G_N_A.SV_C_YM.SR_2Y"
+    EA_YIELD_5Y: "YC.B.U2.EUR.4F.G_N_A.SV_C_YM.SR_5Y"
+    EA_YIELD_10Y: "YC.B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y"
+    EUR_USD: "EXR.D.USD.EUR.SP00.A"
+    EUR_GBP: "EXR.D.GBP.EUR.SP00.A"
+    EUR_JPY: "EXR.D.JPY.EUR.SP00.A"
+    EUR_CNY: "EXR.D.CNY.EUR.SP00.A"
+
+COMTRADE:
+  base_url: "https://comtradeapi.un.org/public/v1/preview"
+  # API key can be set via environment variable: COMTRADE_API_KEY
+  # No key in config file for security - use .env or environment
+  # Note: API v1 requires numeric reporter codes (not ISO3) and text flow codes
+  flows:
+    - "M"  # imports (was 1)
+    - "X"  # exports (was 2)
+  hs_codes:
+    - "2709"  # crude oil
+    - "2710"  # petroleum oils
+    - "2711"  # petroleum gases
+    - "2701"  # coal
+    - "2702"  # lignite
+    - "2601"  # iron ores
+    - "2606"  # aluminum ores
+    - "2603"  # copper ores
+    - "1001"  # wheat
+    - "1005"  # maize/corn
+    - "1006"  # rice
+    - "1201"  # soybeans
+    - "1511"  # palm oil
+    - "1205"  # rapeseeds
+    - "8703"  # motor cars
+    - "8500"  # placeholder for electronics set; expand with specific 85xx codes
+  partner_code: "0"  # 0 = world
+  throttle:
+    max_parallel_requests: 1
+    per_request_sleep_seconds: 1.0
+
+EIA:
+  base_url: "https://api.eia.gov/v2"
+  series_ids:
+    # Crude oil spot prices
+    BRENT_SPOT: "PET.RBRTE.D"
+    WTI_SPOT: "PET.RWTC.D"
+    # Natural gas
+    HENRY_HUB: "NG.RNGWHHD.D"
+    # Refined products
+    US_GASOLINE_RETAIL: "PET.EMM_EPM0_PTE_NUS_DPG.W"
+    US_DIESEL_RETAIL: "PET.EMM_EPD2D_PTE_NUS_DPG.W"
+    # International energy
+    WORLD_LIQUIDS_PRODUCTION: "INTL.53-1-WORL-TBPD.A"
+    WORLD_LIQUIDS_CONSUMPTION: "INTL.54-1-WORL-TBPD.A"
+    AFRICA_ENERGY_CONSUMPTION: "INTL.44-1-AFRC-QBTU.A"
+    ASIA_ENERGY_CONSUMPTION: "INTL.44-1-ASOC-QBTU.A"
+
+EMBER:
+  # API key: 4fb1ac6d-4713-39b5-5249-d887da621730
+  # Set via environment variable: EMBER_API_KEY
+  # New API endpoint (2025): https://ember-energy.org/data-catalogue/
+  api_key: "4fb1ac6d-4713-39b5-5249-d887da621730"
+  base_url: "https://api.ember-climate.org/v1"  # Updated base URL
+  csv_urls:
+    yearly_generation: "https://ember-climate.org/app/uploads/2022/07/yearly_full_release_long_format.csv"
+    monthly_generation: "https://ember-climate.org/app/uploads/2022/07/monthly_full_release_long_format.csv"
+  fuels:
+    - coal
+    - gas
+    - oil
+    - nuclear
+    - hydro
+    - wind
+    - solar
+    - bioenergy
+    - other
+  tech_to_indicator:
+    Solar: "EMBER_ELECTRICITY_SOLAR"
+    Wind: "EMBER_ELECTRICITY_WIND"
+    Coal: "EMBER_ELECTRICITY_COAL"
+    Gas: "EMBER_ELECTRICITY_GAS"
+    Hydro: "EMBER_ELECTRICITY_HYDRO"
+    Nuclear: "EMBER_ELECTRICITY_NUCLEAR"
+    Oil: "EMBER_ELECTRICITY_OIL"
+    Bioenergy: "EMBER_ELECTRICITY_BIOENERGY"
+
+FAOSTAT:
+  base_url: "https://fenixservices.fao.org/faostat/api/v1/en/data"
+  domains:
+    QCL:
+      description: "Production: Crops and livestock products"
+      elements:
+        production: "5510"
+        yield: "5419"
+        area_harvested: "5312"
+      items:
+        wheat: "15"
+        maize: "56"
+        rice: "27"
+        soybeans: "236"
+        palm_oil: "257"
+        beef: "867"
+        pork: "1035"
+        poultry: "1058"
+    TCS:
+      description: "Trade: Crops and livestock products"
+      elements:
+        import_quantity: "5610"
+        import_value: "5622"
+        export_quantity: "5910"
+        export_value: "5922"
+      items:
+        wheat: "15"
+        maize: "56"
+        rice: "27"
+        soybeans: "236"
+    RL:
+      description: "Resources: Land and fertilizers"
+      elements:
+        area: "5110"
+        stocks: "5510"
+      items:
+        arable_land: "6621"
+        forest_area: "6661"
+        fertilizers_total: "3102"
+
+UNCTAD:
+  base_url: "https://unctadstat.unctad.org/EN/WebService.aspx"
+  indicators:
+    FDI_INFLOW: "TM_FDI_INFLOW_NBR"
+    FDI_OUTFLOW: "TM_FDI_OUTFLOW_NBR"
+    FDI_INWARD_STOCK: "TM_FDI_INSTOCK_NBR"
+    FDI_OUTWARD_STOCK: "TM_FDI_OUTSTOCK_NBR"
+
+PATENTSVIEW:
+  base_url: "https://api.patentsview.org/patents/query"
+  cpc_classes:
+    BATTERIES: "H01M"
+    SOLAR_CELLS: "H01L31"
+    SOLAR_THERMAL: "F24S"
+    SEMICONDUCTORS: "H01L"
+    AI_ML: "G06N"
+    CARBON_CAPTURE: "B01D53/14"
+    ELECTRIC_VEHICLES: "B60L"
+    WIND_TURBINES: "F03D"
+
+OPENALEX:
+  base_url: "https://api.openalex.org/works"
+  concept_filters:
+    energy: "C71924100"  # Energy
+    climate: "C2778407081"  # Climate change
+    ai: "C154945302"  # Artificial intelligence
+    materials: "C192562407"  # Materials science
+    renewable_energy: "C2776061698"  # Renewable energy
+    batteries: "C2777701843"  # Battery storage
+
+RSS:
+  feeds:
+    FED:
+      country: US
+      feed_url: "https://www.federalreserve.gov/feeds/press_all.xml"
+      timezone: "America/New_York"
+      name: "Federal Reserve"
+    ECB:
+      country: EA
+      feed_url: "https://www.ecb.europa.eu/rss/press.xml"
+      timezone: "Europe/Frankfurt"
+      name: "European Central Bank"
+    BOE:
+      country: GB
+      feed_url: "https://www.bankofengland.co.uk/news/rss"
+      timezone: "Europe/London"
+      name: "Bank of England"
+    BOC:
+      country: CA
+      feed_url: "https://www.bankofcanada.ca/feeds/press-releases/"
+      timezone: "America/Toronto"
+      name: "Bank of Canada"
+    BANXICO:
+      country: MX
+      feed_url: "https://www.banxico.org.mx/rss/informacion-prensa.xml"
+      timezone: "America/Mexico_City"
+      name: "Banco de México"
+    BCB:
+      country: BR
+      feed_url: "https://www.bcb.gov.br/rss/noticias.xml"
+      timezone: "America/Sao_Paulo"
+      name: "Banco Central do Brasil"
+    SARB:
+      country: ZA
+      feed_url: "https://www.resbank.co.za/en/home/what-we-do/media-releases/rss"
+      timezone: "Africa/Johannesburg"
+      name: "South African Reserve Bank"
+    RBA:
+      country: AU
+      feed_url: "https://www.rba.gov.au/rss/media-releases.xml"
+      timezone: "Australia/Sydney"
+      name: "Reserve Bank of Australia"
+    RBNZ:
+      country: NZ
+      feed_url: "https://www.rbnz.govt.nz/rss/news.xml"
+      timezone: "Pacific/Auckland"
+      name: "Reserve Bank of New Zealand"
+    BOJ:
+      country: JP
+      feed_url: "https://www.boj.or.jp/en/rss/whatsnew/feed.xml"
+      timezone: "Asia/Tokyo"
+      name: "Bank of Japan"
+    BOK:
+      country: KR
+      feed_url: "https://www.bok.or.kr/eng/rss/rss.do?menuNaviId=1890"
+      timezone: "Asia/Seoul"
+      name: "Bank of Korea"
+    PBOC:
+      country: CN
+      feed_url: "http://www.pbc.gov.cn/goutongjiaoliu/113456/113469/rss.xml"
+      timezone: "Asia/Shanghai"
+      name: "People's Bank of China"
+    RBI:
+      country: IN
+      feed_url: "https://www.rbi.org.in/Scripts/RssFeed.aspx"
+      timezone: "Asia/Kolkata"
+      name: "Reserve Bank of India"
+    BI:
+      country: ID
+      feed_url: "https://www.bi.go.id/id/publikasi/rss/default.aspx"
+      timezone: "Asia/Jakarta"
+      name: "Bank Indonesia"
+    CBRT:
+      country: TR
+      feed_url: "https://www.tcmb.gov.tr/wps/wcm/connect/EN/RSS/home/announcements"
+      timezone: "Europe/Istanbul"
+      name: "Central Bank of Turkey"
+
+BIS:
+  base_url: "https://stats.bis.org/api/v1/data"
+  datasets:
+    CREDIT:
+      dataflow: "WS_CREDIT"
+      series_pattern: "Q.{country}.C.A.M.770.A"
+      description: "Credit to private non-financial sector, % GDP"
+    DSR:
+      dataflow: "WS_DSR"
+      series_pattern: "Q.{country}.P.A.M.770.A"
+      description: "Debt service ratio, total private sector"
+
+GDELT:
+  base_url: "https://api.gdeltproject.org/api/v2/doc/doc"
+  query_modes:
+    timeline: "timelinetone"
+    volume: "timelinevol"
+    context: "context"
+  params:
+    format: "json"
+    timespan: "1d"
+
+AISSTREAM:
+  websocket_url: "wss://stream.aisstream.io/v0/stream"
+  regions:
+    NA_EAST_COAST:
+      countries: ["US", "CA", "MX"]
+      bbox: [[-80, 25], [-60, 50]]
+    EU_NORTH_SEA:
+      countries: ["GB", "IE", "NL", "BE", "DE", "DK", "NO", "SE"]
+      bbox: [[-10, 50], [15, 62]]
+    EU_MED:
+      countries: ["FR", "IT", "ES", "GR"]
+      bbox: [[-5, 35], [25, 45]]
+    ASIA_EAST:
+      countries: ["CN", "JP", "KR", "TW", "HK"]
+      bbox: [[115, 20], [145, 45]]
+    ASIA_SEA:
+      countries: ["SG", "MY", "TH", "ID", "VN", "PH"]
+      bbox: [[95, -10], [125, 20]]
+    MENA_GULF:
+      countries: ["SA", "AE", "QA", "KW", "IR", "IQ"]
+      bbox: [[45, 20], [60, 32]]
+    OCEANIA:
+      countries: ["AU", "NZ"]
+      bbox: [[110, -50], [180, -10]]
+  vessel_classes:
+    - "Cargo"
+    - "Tanker"
+    - "Container"

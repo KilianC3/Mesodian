@@ -24,6 +24,7 @@ os.environ.setdefault("AISSTREAM_API_KEY", "test")
 from app.db.engine import get_db  # noqa: E402
 from app.db.models import (  # noqa: E402
     Asset,
+    AssetPrice,
     Country,
     CountryYearFeatures,
     Edge,
@@ -64,36 +65,12 @@ def seeded_session(db_session: Session) -> Session:
 
     asset = Asset(id=1, symbol="SPY", name="SPDR S&P 500 ETF Trust", asset_type="equity", country_id=None, region="US")
     db_session.add(asset)
-    db_session.execute(
-        text(
-            """
-            INSERT INTO warehouse.asset_price
-            (id, asset_id, date, open, high, low, close, adj_close, volume)
-            VALUES
-            (:id1, :asset_id, :date1, :open1, :high1, :low1, :close1, :adj_close1, :volume1),
-            (:id2, :asset_id, :date2, :open2, :high2, :low2, :close2, :adj_close2, :volume2)
-            """
-        ),
-        {
-            "id1": 1,
-            "id2": 2,
-            "asset_id": 1,
-            "date1": dt.date(2024, 1, 2),
-            "date2": dt.date(2024, 1, 3),
-            "open1": 10,
-            "high1": 11,
-            "low1": 9,
-            "close1": 10.5,
-            "adj_close1": 10.4,
-            "volume1": 1000,
-            "open2": 10.5,
-            "high2": 11.2,
-            "low2": 10.1,
-            "close2": 11,
-            "adj_close2": 11,
-            "volume2": 1500,
-        },
-    )
+    db_session.flush()
+    
+    db_session.add_all([
+        AssetPrice(id=1, asset_id=1, date=dt.date(2024, 1, 2), open=10, high=11, low=9, close=10.5, adj_close=10.4, volume=1000),
+        AssetPrice(id=2, asset_id=1, date=dt.date(2024, 1, 3), open=10.5, high=11.2, low=10.1, close=11, adj_close=11, volume=1500),
+    ])
 
     features = CountryYearFeatures(
         country_id="USA",
@@ -121,7 +98,7 @@ def seeded_session(db_session: Session) -> Session:
         Node(id=3, name="Mexico", node_type=NodeType.COUNTRY, ref_type="country", ref_id="MEX", label="Mexico", country_code="MEX"),
     ]
     db_session.add_all(nodes)
-
+    db_session.flush()
     db_session.execute(
         text(
             """

@@ -6,9 +6,11 @@ alembic
 pydantic>=1.10,<2.0
 httpx
 pandas
-pandasdmx
+sdmx1
+msal
 pyyaml
 pytest
 scikit-learn
 statsmodels
 networkx
+websockets

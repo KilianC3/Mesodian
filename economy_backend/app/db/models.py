@@ -19,6 +19,7 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
     JSON,
     func,
@@ -66,10 +67,6 @@ class RawAdb(RawBase):
     __tablename__ = "raw_adb"
 
 
-class RawAfdb(RawBase):
-    __tablename__ = "raw_afdb"
-
-
 class RawComtrade(RawBase):
     __tablename__ = "raw_comtrade"
 
@@ -102,6 +99,14 @@ class RawUnctad(RawBase):
     __tablename__ = "raw_unctad"
 
 
+class RawWto(RawBase):
+    __tablename__ = "raw_wto"
+
+
+class RawOns(RawBase):
+    __tablename__ = "raw_ons"
+
+
 class RawOpenAlex(RawBase):
     __tablename__ = "raw_open_alex"
 
@@ -126,6 +131,10 @@ class RawGdelt(RawBase):
     __tablename__ = "raw_gdelt"
 
 
+class RawOksurf(RawBase):
+    __tablename__ = "raw_oksurf"
+
+
 class RawRss(RawBase):
     __tablename__ = "raw_rss"
 
@@ -134,12 +143,12 @@ class RawEcb(RawBase):
     __tablename__ = "raw_ecb"
 
 
-class RawOns(RawBase):
-    __tablename__ = "raw_ons"
-
-
 class RawDbnomics(RawBase):
     __tablename__ = "raw_dbnomics"
+
+
+class RawFinViz(RawBase):
+    __tablename__ = "raw_finviz"
 
 
 class Country(Base):
@@ -187,7 +196,7 @@ class TimeSeriesValue(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     indicator_id = Column(Integer, ForeignKey("warehouse.indicator.id"), nullable=False)
-    country_id = Column(String(3), ForeignKey("warehouse.country.id"), nullable=False)
+    country_id = Column(String(3), ForeignKey("warehouse.country.id"), nullable=True)
     date = Column(Date, nullable=False)
     value = Column(Numeric, nullable=False)
     source = Column(String, nullable=True)
@@ -286,6 +295,127 @@ class CountryYearFeatures(Base):
     event_stress_pulse = Column(Numeric, nullable=True)
     data_coverage_score = Column(Numeric, nullable=True)
     data_freshness_score = Column(Numeric, nullable=True)
+
+
+class EquityFundamentals(Base):
+    __tablename__ = "equity_fundamentals"
+    __table_args__ = (
+        UniqueConstraint("ticker", "date"),
+        {"schema": "warehouse"},
+    )
+
+    id = Column(BigIntPKType, primary_key=True, autoincrement=True)
+    ticker = Column(String, nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    market_cap = Column(Numeric, nullable=True)
+    pe_ratio = Column(Numeric, nullable=True)
+    forward_pe = Column(Numeric, nullable=True)
+    peg_ratio = Column(Numeric, nullable=True)
+    ps_ratio = Column(Numeric, nullable=True)
+    pb_ratio = Column(Numeric, nullable=True)
+    pc_ratio = Column(Numeric, nullable=True)
+    pfcf_ratio = Column(Numeric, nullable=True)
+    dividend_yield = Column(Numeric, nullable=True)
+    payout_ratio = Column(Numeric, nullable=True)
+    eps_ttm = Column(Numeric, nullable=True)
+    eps_next_y = Column(Numeric, nullable=True)
+    eps_next_q = Column(Numeric, nullable=True)
+    eps_this_y = Column(Numeric, nullable=True)
+    eps_next_5y = Column(Numeric, nullable=True)
+    eps_past_5y = Column(Numeric, nullable=True)
+    sales_past_5y = Column(Numeric, nullable=True)
+    sales_qq = Column(Numeric, nullable=True)
+    eps_qq = Column(Numeric, nullable=True)
+    roa = Column(Numeric, nullable=True)
+    roe = Column(Numeric, nullable=True)
+    roi = Column(Numeric, nullable=True)
+    gross_margin = Column(Numeric, nullable=True)
+    operating_margin = Column(Numeric, nullable=True)
+    net_margin = Column(Numeric, nullable=True)
+    debt_equity = Column(Numeric, nullable=True)
+    lt_debt_equity = Column(Numeric, nullable=True)
+    current_ratio = Column(Numeric, nullable=True)
+    quick_ratio = Column(Numeric, nullable=True)
+    beta = Column(Numeric, nullable=True)
+    atr = Column(Numeric, nullable=True)
+    volatility = Column(Numeric, nullable=True)
+    insider_own = Column(Numeric, nullable=True)
+    insider_trans = Column(Numeric, nullable=True)
+    inst_own = Column(Numeric, nullable=True)
+    inst_trans = Column(Numeric, nullable=True)
+    short_float = Column(Numeric, nullable=True)
+    short_ratio = Column(Numeric, nullable=True)
+    target_price = Column(Numeric, nullable=True)
+    recommendation = Column(Numeric, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class StockNews(Base):
+    __tablename__ = "stock_news"
+    __table_args__ = (
+        UniqueConstraint("ticker", "timestamp", "headline"),
+        {"schema": "warehouse"},
+    )
+
+    id = Column(BigIntPKType, primary_key=True, autoincrement=True)
+    ticker = Column(String, nullable=False, index=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    headline = Column(Text, nullable=False)
+    source = Column(String, nullable=True)
+    url = Column(Text, nullable=True)
+    sentiment_score = Column(Numeric, nullable=True)
+
+
+class AnalystRating(Base):
+    __tablename__ = "analyst_rating"
+    __table_args__ = (
+        UniqueConstraint("ticker", "date", "firm", "action"),
+        {"schema": "warehouse"},
+    )
+
+    id = Column(BigIntPKType, primary_key=True, autoincrement=True)
+    ticker = Column(String, nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    action = Column(String, nullable=False)
+    firm = Column(String, nullable=False)
+    from_rating = Column(String, nullable=True)
+    to_rating = Column(String, nullable=True)
+    price_target = Column(Numeric, nullable=True)
+
+
+class InsiderTrade(Base):
+    __tablename__ = "insider_trade"
+    __table_args__ = (
+        UniqueConstraint("ticker", "insider_name", "date", "transaction_type"),
+        {"schema": "warehouse"},
+    )
+
+    id = Column(BigIntPKType, primary_key=True, autoincrement=True)
+    ticker = Column(String, nullable=False, index=True)
+    insider_name = Column(String, nullable=False)
+    relationship = Column(String, nullable=True)
+    date = Column(Date, nullable=False, index=True)
+    transaction_type = Column(String, nullable=False)
+    cost = Column(Numeric, nullable=True)
+    shares = Column(Numeric, nullable=True)
+    value = Column(Numeric, nullable=True)
+    shares_total = Column(Numeric, nullable=True)
+
+
+class EquityFinancials(Base):
+    __tablename__ = "equity_financials"
+    __table_args__ = (
+        UniqueConstraint("ticker", "statement_type", "year", "line_item"),
+        {"schema": "warehouse"},
+    )
+
+    id = Column(BigIntPKType, primary_key=True, autoincrement=True)
+    ticker = Column(String, nullable=False, index=True)
+    statement_type = Column(String, nullable=False)
+    year = Column(Integer, nullable=False, index=True)
+    line_item = Column(String, nullable=False)
+    value = Column(Numeric, nullable=True)
 
 
 class NodeType(str, enum.Enum):

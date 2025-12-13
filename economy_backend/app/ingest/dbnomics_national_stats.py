@@ -1,7 +1,6 @@
-"""Ingestion helper for national statistics via DB.nomics."""
+"""Ingestion helpers for DB.nomics data (national stats, central banks, thematic)."""
 from __future__ import annotations
 
-import datetime as dt
 import datetime as dt
 from pathlib import Path
 from typing import Any, Dict, Iterable
@@ -35,19 +34,19 @@ def _persist_payload(session: Session, indicator_code: str, series: SeriesInfo, 
     if "date" in serialisable.columns:
         serialisable["date"] = pd.to_datetime(serialisable["date"]).dt.strftime("%Y-%m-%d")
     record = RawDbnomics(
-        fetched_at=dt.datetime.utcnow(),
+        fetched_at=dt.datetime.now(dt.timezone.utc),
         params={"indicator_code": indicator_code, "series_code": series.series_code},
         payload=serialisable.to_dict(orient="records"),
     )
     session.add(record)
 
 
-def ingest_national_stats(session: Session, client: DBNomicsClient | None = None) -> None:
+def _ingest_by_group(session: Session, group: str, client: DBNomicsClient | None = None) -> None:
+    """Generic ingestion function for any dbnomics group."""
     cfg = _load_config()
-    base_url = cfg.get("default_base_url")
-    client = client or DBNomicsClient(base_url=base_url)
+    client = client or DBNomicsClient(base_url=cfg.get("default_base_url"))
 
-    for indicator in _iter_indicator_configs("national_stats"):
+    for indicator in _iter_indicator_configs(group):
         search = indicator.get("dbnomics_search", {})
         query = search.get("query")
         series_list = client.search_series(query, limit=5) if query else []
@@ -60,6 +59,21 @@ def ingest_national_stats(session: Session, client: DBNomicsClient | None = None
         _persist_payload(session, indicator.get("code"), series, df)
 
     session.commit()
+
+
+def ingest_national_stats(session: Session, client: DBNomicsClient | None = None) -> None:
+    """Ingest national statistics via DB.nomics."""
+    _ingest_by_group(session, "national_stats", client)
+
+
+def ingest_central_bank_series(session: Session, client: DBNomicsClient | None = None) -> None:
+    """Ingest central bank series via DB.nomics."""
+    _ingest_by_group(session, "central_banks", client)
+
+
+def ingest_thematic_series(session: Session, client: DBNomicsClient | None = None) -> None:
+    """Ingest thematic series (energy, trade, etc.) via DB.nomics."""
+    _ingest_by_group(session, "thematic", client)
 
 
 if __name__ == "__main__":  # pragma: no cover - CLI entry

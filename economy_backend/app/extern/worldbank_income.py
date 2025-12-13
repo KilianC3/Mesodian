@@ -62,7 +62,7 @@ def fetch_worldbank_income_table() -> Dict[str, str]:
     country_entries = _fetch_worldbank_countries()
     income_by_iso3: Dict[str, str] = {}
     for entry in country_entries:
-        iso3 = (entry.get("iso3Code") or "").upper()
+        iso3 = (entry.get("id") or "").upper()  # World Bank uses "id" for ISO3 code
         income_level = (entry.get("incomeLevel") or {}).get("value")
         if iso3 and income_level:
             income_by_iso3[iso3] = income_level
@@ -75,7 +75,7 @@ def fetch_worldbank_country_names() -> Dict[str, str]:
     country_entries = _fetch_worldbank_countries()
     names_by_iso3: Dict[str, str] = {}
     for entry in country_entries:
-        iso3 = (entry.get("iso3Code") or "").upper()
+        iso3 = (entry.get("id") or "").upper()  # World Bank uses "id" for ISO3 code
         name = entry.get("name")
         if iso3 and name:
             names_by_iso3[iso3] = name
